@@ -45,12 +45,19 @@ export default function HeroSection() {
                 const data = await res.json();
 
                 if (Array.isArray(data) && data.length > 0) {
-                    const images = data.map(img => {
+                    const images = data.map((img: any) => {
                         return img.image_path.startsWith('/uploads')
                             ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${img.image_path}`
                             : img.image_path;
                     });
-                    setBgImages(images);
+
+                    // Only update if images have actually changed to avoid resetting animations
+                    setBgImages(prev => {
+                        if (JSON.stringify(prev) !== JSON.stringify(images)) {
+                            return images;
+                        }
+                        return prev;
+                    });
                 } else {
                     setBgImages(DEFAULT_BG_IMAGES);
                 }
@@ -71,8 +78,15 @@ export default function HeroSection() {
             }
         };
 
+        // Initial fetch
         fetchHeroImages();
         fetchStats();
+
+        // ── Auto-refresh images every 60 seconds ─────────────────────────────
+        // This ensures that if an admin uploads a festival image, it shows up automatically
+        const refreshInterval = setInterval(fetchHeroImages, 60000);
+
+        return () => clearInterval(refreshInterval);
     }, []);
 
     // ── Auto-advance slides ───────────────────────────────────────────────────
