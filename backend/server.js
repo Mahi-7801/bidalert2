@@ -1167,8 +1167,10 @@ async function getTendersLogic(queryParams) {
     // Sector and Category are often used interchangeably
     if (category || sector) {
         const cat = category || sector;
-        whereConditions += ' AND (tender_category LIKE ? OR LOWER(tender_category) = LOWER(?))';
-        params.push(`%${cat}%`, cat);
+        const sanitizedCat = cat.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
+        const catRegex = `[[:<:]]${sanitizedCat}[[:>:]]`;
+        whereConditions += ' AND (tender_category REGEXP ? OR LOWER(tender_category) = LOWER(?))';
+        params.push(catRegex, cat);
     }
 
     if (source) {
@@ -1209,8 +1211,11 @@ async function getTendersLogic(queryParams) {
 
     if (type) {
         // If type is specifically mentioned as a phrase or keyword
-        whereConditions += ' AND (tender_category LIKE ? OR name_of_work LIKE ? OR tender_dept LIKE ?)';
-        params.push(`%${type}%`, `%${type}%`, `%${type}%`);
+        // Use word boundary to ensure exact word matches and avoid matching 'TOR' inside 'SECTOR'
+        const sanitizedType = type.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
+        const typeRegex = `[[:<:]]${sanitizedType}[[:>:]]`;
+        whereConditions += ' AND (tender_category REGEXP ? OR name_of_work REGEXP ? OR tender_dept REGEXP ?)';
+        params.push(typeRegex, typeRegex, typeRegex);
     }
 
     // When browsing archive WITHOUT a specific year, only show recently expired (last 20 days)

@@ -39,7 +39,8 @@ const Highlight = ({ text, query }: { text: string; query: string }) => {
 
     let regex: RegExp;
     try {
-        regex = new RegExp(`(${regexSource})`, 'gi');
+        // Enforce word boundaries to prevent highlighting mid-word matches (e.g. 'TOR' inside 'SECTOR')
+        regex = new RegExp(`\\b(${regexSource})\\b`, 'gi');
     } catch {
         return <>{text}</>;
     }
@@ -50,9 +51,8 @@ const Highlight = ({ text, query }: { text: string; query: string }) => {
         <>
             {parts.map((part, i) => {
                 const lowerPart = part.toLowerCase();
-                const isMatch = keywords.some(k => lowerPart.includes(k.toLowerCase()) || k.toLowerCase().includes(lowerPart));
-                // We actually want to match the specific 'part' if it was found by the regex
-                const isExactMatch = escapedKeywords.some(k => new RegExp(k, 'gi').test(part));
+                // Test if this part is the one that matched the regex exact capture group
+                const isExactMatch = new RegExp(`^(${regexSource})$`, 'i').test(part);
 
                 return isExactMatch ? (
                     <mark key={i} className="highlight-blink">{part}</mark>
