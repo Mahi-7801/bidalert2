@@ -521,9 +521,9 @@ export default function Header() {
                                         </div>
 
                                         <div className="flex items-center gap-2 bg-white/10 pl-2.5 pr-1 py-1 rounded-full border border-white/10 hover:bg-white/20 transition-colors">
-                                            <span className="text-[10px] font-black uppercase text-bid-green flex items-center justify-center w-5 h-5 bg-bid-green/20 rounded-full">{user?.name[0]}</span>
+                                            <span className="text-[10px] font-black uppercase text-bid-green flex items-center justify-center w-5 h-5 bg-bid-green/20 rounded-full">{user?.name?.[0] || 'U'}</span>
                                             <button onClick={logout} className="p-1 px-2 text-white/40 hover:text-red-400 text-[9px] font-black border-l border-white/10 ml-0.5 tracking-widest uppercase">
-                                                OUT
+                                                LOGOUT
                                             </button>
                                         </div>
                                     </div>

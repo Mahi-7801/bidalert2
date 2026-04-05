@@ -141,6 +141,7 @@ function TendersContent() {
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const [tenders, setTenders] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -366,8 +367,22 @@ function TendersContent() {
 
             <div className="container mx-auto px-4 max-w-[1530px] flex-grow">
                 <div className="flex flex-col lg:flex-row gap-8 items-start h-full">
+                    {/* Mobile Filter Toggle */}
+                    <div className="lg:hidden w-full mb-4">
+                        <button
+                            onClick={() => setShowMobileFilters(!showMobileFilters)}
+                            className="w-full flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm font-black text-xs uppercase tracking-widest text-[#0A0F1C]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <Filter className={`w-5 h-5 ${showMobileFilters ? 'text-bid-green' : 'text-slate-400'}`} />
+                                {showMobileFilters ? 'Hide Search Filters' : 'Show Search Filters'}
+                            </div>
+                            <ChevronDown className={`w-5 h-5 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
+
                     {/* Sidebar Filters - Fixed/Sticky */}
-                    <aside className="w-full lg:w-1/4 pb-8">
+                    <aside className={`w-full lg:w-1/4 pb-8 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
                         <form onSubmit={applyFilters} className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-24">
                             <div className="bg-[#0A0F1C] px-6 py-6 border-b border-white/5 flex justify-between items-center flex-shrink-0">
                                 <h3 className="font-bold text-white text-base flex items-center gap-3">
@@ -617,10 +632,10 @@ function TendersContent() {
                                                 className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group`}
                                             >
                                                 {/* Header - Solid Green Bar */}
-                                                <div className="bg-[#41a367] px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-white">
-                                                    <div className="flex items-center gap-2 max-w-full">
+                                                <div className="bg-[#41a367] px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-white">
+                                                    <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                                                         <div className="w-2.5 h-2.5 rounded-full bg-[#1a4d2e] shrink-0"></div>
-                                                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider line-clamp-1 sm:line-clamp-none">
+                                                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider line-clamp-2 sm:line-clamp-none min-w-0">
                                                             #{(filters.page - 1) * 20 + index + 1} [
                                                             <Highlight
                                                                 text={tender.source_table === 'GEM' ? 'GeM Tender' : tender.source_table === 'eProcurement' ? 'eProcurement Tender' : tender.source_table === 'iREPS' ? 'IREPS Tender' : tender.source_table ? `${tender.source_table} Tender` : 'Tender'}
@@ -631,9 +646,9 @@ function TendersContent() {
                                                             <span className="shrink-0 px-2 py-0.5 bg-red-500 text-white rounded-[4px] text-[9px] font-black uppercase tracking-widest shadow-sm">Archived</span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 opacity-90 self-end sm:self-auto">
+                                                    <div className="flex items-center gap-1.5 opacity-90 self-end sm:self-auto shrink-0">
                                                         <FileText className="w-3.5 h-3.5" />
-                                                        <span className="text-[10px] sm:text-[11px] font-bold">{getDisplayId(tender.id)}</span>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold whitespace-nowrap">{getDisplayId(tender.id)}</span>
                                                     </div>
                                                 </div>
 
@@ -654,21 +669,21 @@ function TendersContent() {
                                                     </Link>
 
                                                     {/* Info Pill - Authority & Location */}
-                                                    <div className="bg-[#f8fafc] border border-slate-100 rounded-xl py-3 px-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 mb-5">
-                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full sm:max-w-[65%] shrink-0">
+                                                    <div className="bg-[#f8fafc] border border-slate-100 rounded-xl py-3 px-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 mb-5">
+                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full sm:w-auto sm:max-w-[60%] min-w-0">
                                                             <Building className="w-4 h-4 text-bid-green shrink-0" />
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[8px] text-slate-400 mb-0.5">{getCleanTitle(tender.title, tender.id, tender.authority) === tender.authority ? 'TENDER ID / BA-NO.' : 'AUTHORITY / DEPT'}</span>
+                                                            <div className="flex flex-col min-w-0 overflow-hidden">
+                                                                <span className="text-[8px] text-slate-400 mb-0.5 whitespace-nowrap">{getCleanTitle(tender.title, tender.id, tender.authority) === tender.authority ? 'TENDER ID / BA-NO.' : 'AUTHORITY / DEPT'}</span>
                                                                 <span className="truncate leading-none">
                                                                     <Highlight text={getCleanTitle(tender.title, tender.id, tender.authority) === tender.authority ? getDisplayId(tender.id) : (tender.authority || 'Refer Document')} query={combinedHighlightQuery} />
                                                                 </span>
                                                             </div>
                                                         </div>
                                                         <div className="hidden sm:block w-px h-6 bg-slate-200"></div>
-                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full">
+                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full sm:w-auto min-w-0 flex-1">
                                                             <MapPin className="w-4 h-4 text-bid-green shrink-0" />
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[8px] text-slate-400 mb-0.5">LOCATION</span>
+                                                            <div className="flex flex-col min-w-0 overflow-hidden">
+                                                                <span className="text-[8px] text-slate-400 mb-0.5 whitespace-nowrap">LOCATION</span>
                                                                 <span className="truncate leading-none">{tender.city ? `${tender.city}, ` : ''}{tender.state || 'India'}</span>
                                                             </div>
                                                         </div>
@@ -700,14 +715,14 @@ function TendersContent() {
                                                     </div>
 
                                                     {/* Footer Actions */}
-                                                    <div className="flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-4 pt-4 border-t border-slate-100">
-                                                        <div className="flex gap-1.5 justify-center xs:justify-start">
-                                                            <Link href="https://www.facebook.com/Bidalert/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#3b5998] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Facebook size={14} fill="currentColor" /></Link>
-                                                            <Link href="https://www.instagram.com/bidalert.in/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#e1306c] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Instagram size={14} /></Link>
-                                                            <Link href="https://in.linkedin.com/company/bidalert" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#007fb1] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Linkedin size={14} fill="currentColor" /></Link>
-                                                            <button className="w-7 h-7 bg-[#25d366] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><MessageCircle size={14} fill="currentColor" /></button>
+                                                    <div className="flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-3 pt-4 border-t border-slate-100">
+                                                        <div className="flex gap-2 justify-center xs:justify-start flex-wrap">
+                                                            <Link href="https://www.facebook.com/Bidalert/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#3b5998] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Facebook size={12} className="sm:w-[14px]" fill="currentColor" /></Link>
+                                                            <Link href="https://www.instagram.com/bidalert.in/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#e1306c] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Instagram size={12} className="sm:w-[14px]" /></Link>
+                                                            <Link href="https://in.linkedin.com/company/bidalert" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#007fb1] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Linkedin size={12} className="sm:w-[14px]" fill="currentColor" /></Link>
+                                                            <button className="w-7 h-7 sm:w-8 sm:h-8 bg-[#25d366] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><MessageCircle size={12} className="sm:w-[14px]" fill="currentColor" /></button>
                                                         </div>
-                                                        <Link href={`/tenders/${encodeURIComponent(tender.id)}`} className="bg-[#41a367] text-white px-5 py-3 xs:py-2.5 rounded-[4px] shadow-sm font-black text-[10px] uppercase tracking-[0.1em] hover:bg-[#358a55] transition-all flex items-center justify-center gap-2">
+                                                        <Link href={`/tenders/${encodeURIComponent(tender.id)}`} className="bg-gradient-to-r from-emerald-600 to-bid-greenhover text-white px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg shadow-md font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:shadow-emerald-200/50 transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
                                                             <FileText size={14} /> VIEW TENDER
                                                         </Link>
                                                     </div>

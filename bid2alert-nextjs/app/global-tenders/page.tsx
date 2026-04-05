@@ -71,6 +71,7 @@ function GlobalTendersContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [totalTenders, setTotalTenders] = useState(0);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const toggleDropdown = (name: string) => {
         setActiveDropdown(activeDropdown === name ? null : name);
@@ -144,7 +145,7 @@ function GlobalTendersContent() {
                 // Smooth scroll to the element but slightly offset for the sticky header
                 const y = el.getBoundingClientRect().top + window.scrollY - 150;
                 window.scrollTo({ top: y, behavior: 'smooth' });
-                
+
                 // Focus the element after scrolling
                 setTimeout(() => el.focus(), 300);
             }
@@ -245,8 +246,22 @@ function GlobalTendersContent() {
             <div className="container mx-auto px-4 max-w-[1530px] flex-grow">
                 <div className="flex flex-col lg:flex-row gap-8 items-start h-full">
 
+                    {/* Mobile Filter Toggle */}
+                    <div className="lg:hidden w-full mb-4">
+                        <button
+                            onClick={() => setShowMobileFilters(!showMobileFilters)}
+                            className="w-full flex items-center justify-between bg-white px-6 py-4 rounded-[1.5rem] border border-slate-200 shadow-sm font-black text-xs uppercase tracking-widest text-[#0A0F1C]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <Filter className={`w-5 h-5 ${showMobileFilters ? 'text-bid-green' : 'text-slate-400'}`} />
+                                {showMobileFilters ? 'Hide Search Filters' : 'Show Search Filters'}
+                            </div>
+                            <ChevronDown className={`w-5 h-5 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                        </button>
+                    </div>
+
                     {/* SIDEBAR FILTER */}
-                    <aside className="w-full lg:w-1/4 pb-8">
+                    <aside className={`w-full lg:w-1/4 pb-8 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}>
                         <form onSubmit={applyFilters} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 flex flex-col h-full lg:sticky lg:top-24">
                             <div className="bg-[#0A0F1C] px-6 py-6 border-b border-white/5 flex justify-between items-center flex-shrink-0">
                                 <h3 className="font-bold text-white text-base flex items-center gap-3">
@@ -268,21 +283,21 @@ function GlobalTendersContent() {
                                             className="w-full pl-11 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:border-bid-green focus:ring-4 focus:ring-bid-green/5 transition-all"
                                         />
                                         <Search className="w-4 h-4 text-slate-400 absolute left-4 top-4 group-focus-within:text-bid-green transition-colors" />
-                                         {filters.q && (
-                                             <button
-                                                 type="button"
-                                                 onClick={() => {
-                                                     setFilters(prev => ({ ...prev, q: '' }));
-                                                     // Update URL immediately
-                                                     const queryParams = new URLSearchParams(searchParams.toString());
-                                                     queryParams.delete('q');
-                                                     router.push(`/global-tenders?${queryParams.toString()}`);
-                                                 }}
-                                                 className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
-                                             >
-                                                 <X className="w-4 h-4" />
-                                             </button>
-                                         )}
+                                        {filters.q && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFilters(prev => ({ ...prev, q: '' }));
+                                                    // Update URL immediately
+                                                    const queryParams = new URLSearchParams(searchParams.toString());
+                                                    queryParams.delete('q');
+                                                    router.push(`/global-tenders?${queryParams.toString()}`);
+                                                }}
+                                                className="absolute right-4 top-4 text-slate-400 hover:text-red-500"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -425,32 +440,32 @@ function GlobalTendersContent() {
                                     {tenders.map((tender: any, index: number) => {
                                         // If ANY filter is active, all returned cards are already API-matched → highlight
                                         const hasActiveFilter = !!(filters.q || filters.country || filters.city || filters.category || filters.source || filters.authority);
-                                        
+
                                         // Combined query for highlighting all matching terms in the card
                                         const combinedHighlightQuery = [
-                                            filters.q, 
-                                            filters.country, 
-                                            filters.city, 
-                                            filters.category, 
-                                            filters.source, 
+                                            filters.q,
+                                            filters.country,
+                                            filters.city,
+                                            filters.category,
+                                            filters.source,
                                             filters.authority
                                         ].filter(Boolean).join(',');
 
                                         return (
                                             <div key={`${tender.id}-${index}`} className={`bg-white rounded-xl border ${hasActiveFilter ? 'border-bid-green blink-highlight' : 'border-slate-200'} shadow-sm overflow-hidden hover:shadow-md transition-shadow group`}>
                                                 {/* Header - Solid Green Bar */}
-                                                <div className="bg-[#41a367] px-4 py-2.5 flex justify-between items-center text-white">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-[#1a4d2e]"></div>
-                                                        <span className="text-[11px] font-bold uppercase tracking-wider">
+                                                <div className="bg-[#41a367] px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-white">
+                                                    <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-[#1a4d2e] shrink-0"></div>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider line-clamp-2 sm:line-clamp-none min-w-0">
                                                             #{(filters.page - 1) * 20 + index + 1} [
-                                                                <Highlight text={tender.source || 'Global Tender'} query={combinedHighlightQuery} />
+                                                            <Highlight text={tender.source || 'Global Tender'} query={combinedHighlightQuery} />
                                                             ] <Highlight text={tender.country || 'GLOBAL'} query={combinedHighlightQuery} /> TENDERS
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 opacity-90">
+                                                    <div className="flex items-center gap-1.5 opacity-90 self-end sm:self-auto shrink-0">
                                                         <FileText className="w-3.5 h-3.5" />
-                                                        <span className="text-[11px] font-bold">{tender.id || 'REF-N/A'}</span>
+                                                        <span className="text-[10px] sm:text-[11px] font-bold whitespace-nowrap">{tender.id || 'REF-N/A'}</span>
                                                     </div>
                                                 </div>
 
@@ -464,36 +479,45 @@ function GlobalTendersContent() {
                                                     </Link>
 
                                                     {/* Info Pill - Authority & Location */}
-                                                    <div className="bg-[#f1f5f9]/60 border border-slate-100 rounded-lg py-2.5 px-4 flex items-center gap-4 mb-5">
-                                                        <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold uppercase truncate max-w-[60%]">
-                                                            <Building className="w-3.5 h-3.5 text-slate-400" />
-                                                            <Highlight text={tender.authority || 'Refer Document'} query={combinedHighlightQuery} />
+                                                    <div className="bg-[#f8fafc] border border-slate-100 rounded-xl py-3 px-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 mb-5">
+                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full sm:w-auto sm:max-w-[60%] min-w-0">
+                                                            <Building className="w-4 h-4 text-slate-400 shrink-0" />
+                                                            <div className="flex flex-col min-w-0 overflow-hidden">
+                                                                <span className="text-[8px] text-slate-400 mb-0.5 whitespace-nowrap uppercase">AUTHORITY / AGENCY</span>
+                                                                <span className="truncate leading-none uppercase">
+                                                                    <Highlight text={tender.authority || 'Refer Document'} query={combinedHighlightQuery} />
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="w-px h-3 bg-slate-200"></div>
-                                                        <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold uppercase">
-                                                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                            <span>{tender.city ? `${tender.city}, ` : ''}{tender.country || 'International'}</span>
+                                                        <div className="hidden sm:block w-px h-6 bg-slate-200"></div>
+                                                        <div className="flex items-center gap-2.5 text-[10px] text-slate-700 font-black uppercase w-full sm:w-auto min-w-0 flex-1">
+                                                            <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                                                            <div className="flex flex-col min-w-0 overflow-hidden">
+                                                                <span className="text-[8px] text-slate-400 mb-0.5 whitespace-nowrap uppercase">LOCATION</span>
+                                                                <span className="truncate leading-none uppercase">{tender.city ? `${tender.city}, ` : ''}{tender.country || 'International'}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
                                                     {/* Stats Grid */}
-                                                    <div className="space-y-4 mb-6">
-                                                        <div className="flex justify-between items-center">
-                                                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
+                                                    <div className="space-y-3 sm:space-y-4 mb-6">
+                                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+                                                            <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-tight">
                                                                 PUBLISHED: <span className="text-slate-600 ml-1">{tender.created_at ? new Date(tender.created_at).toLocaleDateString() : 'N/A'}</span>
                                                             </div>
-                                                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center">
-                                                                CLOSING: <span className="ml-2 bg-red-50 text-red-600 px-3 py-1 rounded-md border border-red-100 font-black">{tender.deadline || 'Refer Document'}</span>
+                                                            <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-tight flex items-center w-full sm:w-auto">
+                                                                CLOSING: <span className="ml-auto sm:ml-2 bg-red-50 text-red-600 px-3 py-1 rounded-md border border-red-100 font-black whitespace-nowrap">{tender.deadline || 'Refer Document'}</span>
                                                             </div>
                                                         </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <div className="text-[11px] font-bold text-[#b45cd6] uppercase">
-                                                                EMD: <span className="ml-1">
+                                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+                                                            <div className="text-[10px] sm:text-[11px] font-bold text-[#b45cd6] uppercase">
+                                                                EMD: <span className="text-[#b45cd6]/80 ml-1">
                                                                     {tender.tender_emd && tender.tender_emd !== '0' && !isNaN(Number(tender.tender_emd)) ? (tender.currency ? `${tender.currency} ` : 'â‚¹') + tender.tender_emd : 'Refer Doc'}
                                                                 </span>
                                                             </div>
-                                                            <div className="text-[11px] font-bold text-blue-600 uppercase">
-                                                                ECV: <span className="ml-1">
+                                                            <div className="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase w-full sm:w-auto flex justify-between sm:justify-start">
+                                                                <span>ECV:</span>
+                                                                <span className="ml-1 text-blue-600/80">
                                                                     {tender.estimated_value && tender.estimated_value !== '0' && !isNaN(Number(tender.estimated_value)) ? (tender.currency ? `${tender.currency} ` : 'â‚¹') + tender.estimated_value : 'Refer Doc'}
                                                                 </span>
                                                             </div>
@@ -501,14 +525,14 @@ function GlobalTendersContent() {
                                                     </div>
 
                                                     {/* Footer Actions */}
-                                                    <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                                                        <div className="flex gap-1.5">
-                                                            <Link href="https://www.facebook.com/Bidalert/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#3b5998] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Facebook size={14} fill="currentColor" /></Link>
-                                                            <Link href="https://www.instagram.com/bidalert.in/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#e1306c] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Instagram size={14} /></Link>
-                                                            <Link href="https://in.linkedin.com/company/bidalert" target="_blank" rel="noopener noreferrer" className="w-7 h-7 bg-[#007fb1] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><Linkedin size={14} fill="currentColor" /></Link>
-                                                            <button className="w-7 h-7 bg-[#25d366] text-white rounded flex items-center justify-center hover:brightness-90 transition-all"><MessageCircle size={14} fill="currentColor" /></button>
+                                                    <div className="flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-3 pt-4 border-t border-slate-100">
+                                                        <div className="flex gap-2 justify-center xs:justify-start flex-wrap">
+                                                            <Link href="https://www.facebook.com/Bidalert/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#3b5998] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Facebook size={12} className="sm:w-[14px]" fill="currentColor" /></Link>
+                                                            <Link href="https://www.instagram.com/bidalert.in/" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#e1306c] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Instagram size={12} className="sm:w-[14px]" /></Link>
+                                                            <Link href="https://in.linkedin.com/company/bidalert" target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-8 sm:h-8 bg-[#007fb1] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><Linkedin size={12} className="sm:w-[14px]" fill="currentColor" /></Link>
+                                                            <button className="w-7 h-7 sm:w-8 sm:h-8 bg-[#25d366] text-white rounded-lg flex items-center justify-center hover:brightness-90 transition-all shadow-sm"><MessageCircle size={12} className="sm:w-[14px]" fill="currentColor" /></button>
                                                         </div>
-                                                        <Link href={`/global-tenders/${encodeURIComponent(tender.id)}`} className="bg-[#41a367] text-white px-5 py-2.5 rounded-[4px] shadow-sm font-black text-[10px] uppercase tracking-[0.1em] hover:bg-[#358a55] transition-all flex items-center gap-2">
+                                                        <Link href={`/global-tenders/${encodeURIComponent(tender.id)}`} className="bg-gradient-to-r from-emerald-600 to-bid-greenhover text-white px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg shadow-md font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:shadow-emerald-200/50 transition-all flex items-center justify-center gap-2 whitespace-nowrap active:scale-95">
                                                             <FileText size={14} /> VIEW TENDER
                                                         </Link>
                                                     </div>
@@ -573,29 +597,29 @@ function GlobalTendersContent() {
                                         </p>
                                     </div>
                                 </>
-                                                        ) : (
-                                 <div className="bg-white rounded-[3rem] p-12 md:p-24 text-center border-2 border-dashed border-slate-100 shadow-inner group">
-                                     <div className="bg-slate-50 w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                                         <Search className="w-10 h-10 md:w-12 md:h-12 text-slate-300" />
-                                     </div>
-                                     <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-6 uppercase tracking-tight">No Results Found</h3>
-                                     <p className="text-slate-500 max-w-md mx-auto mb-10 text-base md:text-lg font-medium leading-relaxed">
-                                         We couldn't find any global tenders matching <strong>"{filters.q || filters.category || filters.country || 'your search'}"</strong> in our indexed records.
-                                     </p>
-                                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
-                                         <button onClick={clearFilters} className="w-full sm:w-auto bg-slate-100 text-slate-900 px-8 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95">
-                                             Clear Filters
-                                         </button>
-                                         <Link 
-                                             href={`/my-requests?keyword=${encodeURIComponent(filters.q || filters.category || '')}&country=${encodeURIComponent(filters.country)}`}
-                                             className="w-full sm:w-auto bg-[#00C853] text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl hover:shadow-emerald-200/50 active:scale-95 flex items-center justify-center gap-2"
-                                         >
-                                             Request Global Search
-                                             <ArrowRight size={14} />
-                                         </Link>
-                                     </div>
-                                 </div>
-                             )}
+                            ) : (
+                                <div className="bg-white rounded-[3rem] p-12 md:p-24 text-center border-2 border-dashed border-slate-100 shadow-inner group">
+                                    <div className="bg-slate-50 w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                        <Search className="w-10 h-10 md:w-12 md:h-12 text-slate-300" />
+                                    </div>
+                                    <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-6 uppercase tracking-tight">No Results Found</h3>
+                                    <p className="text-slate-500 max-w-md mx-auto mb-10 text-base md:text-lg font-medium leading-relaxed">
+                                        We couldn't find any global tenders matching <strong>"{filters.q || filters.category || filters.country || 'your search'}"</strong> in our indexed records.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
+                                        <button onClick={clearFilters} className="w-full sm:w-auto bg-slate-100 text-slate-900 px-8 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95">
+                                            Clear Filters
+                                        </button>
+                                        <Link
+                                            href={`/my-requests?keyword=${encodeURIComponent(filters.q || filters.category || '')}&country=${encodeURIComponent(filters.country)}`}
+                                            className="w-full sm:w-auto bg-[#00C853] text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl hover:shadow-emerald-200/50 active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            Request Global Search
+                                            <ArrowRight size={14} />
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                     </main>

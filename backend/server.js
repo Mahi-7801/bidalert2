@@ -9,7 +9,7 @@ const { body, validationResult } = require('express-validator');
 const { pool, testConnection } = require('./database');
 const config = require('./config');
 const { extractText, analyzeTender, processBidGPTQuery } = require('./analyzer_handler');
-const { saveTendersForUser, checkExpiringSavedTenders, notifyAllUsers } = require('./notifications_service');
+const { saveTendersForUser, checkExpiringSavedTenders, notifyAllUsers, checkSubscriptionExpirations } = require('./notifications_service');
 const { sendSMS } = require('./fast2sms_service');
 const nodemailer = require('nodemailer');
 
@@ -5225,6 +5225,11 @@ function scheduleDailyCleanup() {
     }, msUntilNext);
 }
 scheduleDailyCleanup();
+
+// Schedule subscription expiration check every 3 minutes
+setInterval(() => {
+    checkSubscriptionExpirations();
+}, 3 * 60 * 1000); // 180,000 ms
 
 // Admin: manually trigger digest
 app.post('/api/admin/trigger-alerts', async (req, res) => {

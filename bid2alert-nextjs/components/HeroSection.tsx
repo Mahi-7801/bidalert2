@@ -43,7 +43,7 @@ export default function HeroSection() {
                 const res = await fetch('/api/images');
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                
+
                 if (Array.isArray(data) && data.length > 0) {
                     const images = data.map(img => {
                         return img.image_path.startsWith('/uploads')
@@ -210,7 +210,7 @@ export default function HeroSection() {
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
-                            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight leading-[1.05]"
+                            className="text-3xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight leading-[1.05]"
                         >
                             <span className="text-white drop-shadow-2xl">
                                 Find Government & <br className="hidden lg:block" /> Private Tenders <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-bid-green">Across India</span>
@@ -233,11 +233,11 @@ export default function HeroSection() {
                             className="max-w-4xl mx-auto relative px-1 sm:px-0"
                         >
                             <form onSubmit={handleSearch} className="bg-white rounded-[14px] shadow-2xl flex flex-col sm:flex-row items-stretch sm:items-center w-full relative p-1.5 focus-within:shadow-[0_0_30px_rgba(32,178,170,0.3)] transition-all duration-300">
-                                
+
                                 {/* Dropdown Box */}
                                 <div className="relative border-b sm:border-b-0 sm:border-r border-gray-200">
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                                         className="flex items-center justify-between w-full sm:w-[170px] px-4 py-3 sm:py-0 h-full text-sm sm:text-[15px] text-slate-700 hover:text-slate-900 transition-colors bg-transparent border-0 outline-none whitespace-nowrap"
                                     >
@@ -249,7 +249,7 @@ export default function HeroSection() {
                                         {showTypeDropdown && (
                                             <>
                                                 <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
-                                                <MotionDiv 
+                                                <MotionDiv
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: 10 }}
@@ -260,12 +260,12 @@ export default function HeroSection() {
                                                         if (stats) {
                                                             if (type === 'Indian Tenders') count = (stats.breakdown?.gem || 0) + (stats.breakdown?.eprocurement || 0) + (stats.breakdown?.ireps || 0);
                                                             else if (type === 'Global Tenders') count = stats.breakdown?.global || 0;
-                                                         }
-                                                        
+                                                        }
+
                                                         return (
-                                                            <div 
+                                                            <div
                                                                 key={type}
-                                                                onClick={() => { setSearchType(type); setShowTypeDropdown(false); }} 
+                                                                onClick={() => { setSearchType(type); setShowTypeDropdown(false); }}
                                                                 className={`px-5 py-3.5 text-sm cursor-pointer transition-colors border-b border-gray-50 last:border-0 flex justify-between items-center ${searchType === type ? 'bg-slate-50 text-slate-900 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}`}
                                                             >
                                                                 <span>{type}</span>
@@ -298,7 +298,7 @@ export default function HeroSection() {
                                         placeholder="Type keyword eg-cpwd, gem etc."
                                         className="w-full px-4 sm:px-6 py-3.5 sm:py-4 bg-transparent outline-none text-slate-800 placeholder-slate-400 text-[15px] sm:text-[16px]"
                                     />
-                                    
+
                                     {/* Suggestions Dropdown */}
                                     {showSuggestions && searchQuery.length > 0 && filteredCategories.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 mt-4 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden z-[100] text-left">

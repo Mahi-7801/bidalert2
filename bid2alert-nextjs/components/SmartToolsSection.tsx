@@ -44,7 +44,7 @@ export default function SmartToolsSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         // @ts-ignore
                         viewport={{ once: true }}
-                        className="text-4xl sm:text-5xl font-black text-slate-900 mb-3 tracking-tighter"
+                        className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-3 tracking-tighter"
                     >
                         Our{' '}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-bid-greenhover to-emerald-600">

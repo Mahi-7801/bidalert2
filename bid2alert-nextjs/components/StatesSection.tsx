@@ -101,7 +101,7 @@ export default function StatesSection() {
 
             <div className="container mx-auto px-4 relative z-10">
                 {/* Header Section */}
-                <div className="text-center mb-8 sm:mb-16 max-w-2xl mx-auto px-4">
+                <div className="text-center mb-8 sm:mb-16 max-w-3xl mx-auto px-4">
                     <motion.div
                         // @ts-ignore
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -121,9 +121,9 @@ export default function StatesSection() {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-xl sm:text-4xl md:text-6xl font-black text-slate-900 mb-4 tracking-tighter"
+                        className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-4 tracking-tight leading-[1.1] py-2"
                     >
-                        Regional <span className="text-transparent bg-clip-text bg-gradient-to-r from-bid-greenhover to-emerald-600">Intelligence</span>
+                        Regional <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-bid-greenhover to-emerald-600 pb-1">Intelligence</span>
                     </motion.h2>
                     <motion.p
                         // @ts-ignore
@@ -171,18 +171,18 @@ export default function StatesSection() {
                             >
                                 <Link
                                     href={`/tenders?state=${encodeURIComponent(state.name)}`}
-                                    className="group block bg-white border-2 border-slate-100 p-3 sm:p-5 rounded-2xl sm:rounded-[2.5rem] hover:border-bid-green/40 transition-all duration-300 hover:shadow-2xl hover:shadow-bid-green/10 aspect-square relative overflow-hidden flex flex-col items-center justify-center text-center"
+                                    className="group block bg-white border-2 border-slate-100 p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] hover:border-bid-green/40 transition-all duration-300 hover:shadow-2xl hover:shadow-bid-green/10 min-h-[180px] sm:min-h-[300px] relative overflow-hidden flex flex-col items-center justify-center text-center"
                                 >
                                     {/* Trend Badge — only show when there is real live data */}
                                     {!isLoading && count > 0 && (
-                                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 z-10">
+                                        <div className="absolute top-2 right-2 sm:top-5 sm:right-5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 z-10">
                                             <TrendingUp size={8} className="text-emerald-600 sm:w-[10px]" />
                                             <span className="text-[8px] sm:text-[10px] font-black text-emerald-600 tracking-wider font-mono">{state.trend}</span>
                                         </div>
                                     )}
 
                                     {/* Centered Map Container */}
-                                    <div className="relative w-[70%] aspect-square bg-slate-50/50 rounded-2xl overflow-hidden mb-3 p-2 flex items-center justify-center border border-slate-100/50 group-hover:bg-white transition-all duration-500">
+                                    <div className="relative w-[65%] sm:w-[70%] aspect-square bg-slate-50/50 rounded-2xl overflow-hidden mb-3 p-2 flex items-center justify-center border border-slate-100/50 group-hover:bg-white transition-all duration-500">
                                         <div className="relative w-full h-full">
                                             <Image
                                                 src={state.image}
@@ -194,7 +194,7 @@ export default function StatesSection() {
                                     </div>
 
                                     {/* Content */}
-                                    <h3 className="text-xs sm:text-lg font-black text-slate-900 mb-1.5 sm:mb-2 uppercase tracking-tight group-hover:text-bid-greenhover transition-colors line-clamp-1">
+                                    <h3 className="text-xs sm:text-lg font-black text-slate-900 mb-1.5 sm:mb-2 uppercase tracking-tight group-hover:text-bid-greenhover transition-colors line-clamp-2 px-1">
                                         {state.name}
                                     </h3>
 
@@ -210,7 +210,7 @@ export default function StatesSection() {
                                     </div>
 
                                     {/* Absolute bottom indicator */}
-                                    <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute bottom-4 sm:bottom-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <ArrowRight size={14} className="text-bid-greenhover" />
                                     </div>
                                 </Link>

@@ -179,8 +179,105 @@ async function notifyAllUsers(title, message, link, type = 'system') {
     }
 }
 
+// Job to check for expired subscriptions
+async function checkSubscriptionExpirations() {
+    try {
+        console.log('⏰ Checking for expired user subscriptions...');
+
+        // Find users whose plans have just expired
+        // We look for 'pro' status users with expiry date in the past
+        const [expiredUsers] = await pool.query(`
+            SELECT id, name, email, plan_type 
+            FROM users 
+            WHERE subscription_status = 'pro' 
+            AND plan_expiry_date < NOW()
+        `);
+
+        if (expiredUsers.length > 0) {
+            console.log(`📉 Found ${expiredUsers.length} expired subscriptions to process.`);
+            const nodemailer = require('nodemailer');
+
+            const transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST || 'smtp.gmail.com',
+                port: parseInt(process.env.SMTP_PORT) || 465,
+                secure: process.env.SMTP_PORT == '465',
+                auth: {
+                    user: process.env.SMTP_USER || 'support@bidalert.in',
+                    pass: process.env.SMTP_PASS || 'hfhukbgfokadttxr'
+                }
+            });
+
+            for (const user of expiredUsers) {
+                // 1. Update User Table - Downgrade to free/expired
+                await pool.query(`
+                    UPDATE users SET 
+                        subscription_status = 'expired',
+                        web_access = 0,
+                        email_alerts = 0,
+                        bidding_guidance = 0,
+                        support_24_7 = 0,
+                        sms_alerts = 0
+                    WHERE id = ?
+                `, [user.id]);
+
+                // 2. Update Subscriptions Table
+                await pool.query(`
+                    UPDATE subscriptions SET status = 'expired' 
+                    WHERE user_id = ? AND status = 'active'
+                `, [user.id]);
+
+                // 3. Create In-App Notification (Bell Icon)
+                const title = "Plan Expired 🚨";
+                const message = `Your ${user.plan_type || 'Premium'} plan has expired. Please renew your subscription to continue accessing professional tender insights.`;
+
+                await pool.query(
+                    'INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)',
+                    [user.id, title, message, 'subscription_expiry', '/plans']
+                );
+
+                // 4. Send Email Notification
+                if (user.email) {
+                    const mailOptions = {
+                        from: `"BidAlert Billing" <${process.env.SMTP_USER || 'support@bidalert.in'}>`,
+                        to: user.email,
+                        subject: `Your BidAlert Plan has Expired - Action Required`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 12px; max-width: 600px;">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <h1 style="color: #41a367; margin: 0;">BidAlert</h1>
+                                </div>
+                                <h2 style="color: #333;">Subscription Expired</h2>
+                                <p>Hello ${user.name || 'User'},</p>
+                                <p>We wanted to let you know that your <strong>${user.plan_type || 'Basic'}</strong> plan has expired.</p>
+                                <div style="background: #fff8f8; border-left: 4px solid #ff4444; padding: 15px; margin: 20px 0;">
+                                    <p style="margin: 0; color: #cc0000; font-weight: bold;">Standard access and smart alerts have been paused.</p>
+                                </div>
+                                <p>To continue enjoying uninterrupted access to tender opportunities and AI tools, please renew your plan.</p>
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/plans" 
+                                       style="background: #41a367; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                                        Renew Subscription Now
+                                    </a>
+                                </div>
+                                <p style="font-size: 13px; color: #666;">If you have any questions, reply to this email or contact support.</p>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                <p style="font-size: 11px; color: #999; text-align: center;">© 2026 BidAlert Management Portal. All rights reserved.</p>
+                            </div>
+                        `
+                    };
+                    transporter.sendMail(mailOptions).catch(err => console.error(`Expiration email failed for user ${user.id}:`, err.message));
+                }
+            }
+            console.log(`✅ Processed ${expiredUsers.length} expired subscriptions.`);
+        }
+    } catch (error) {
+        console.error('❌ Error checking subscription expirations:', error.message);
+    }
+}
+
 module.exports = {
     saveTendersForUser,
     checkExpiringSavedTenders,
-    notifyAllUsers
+    notifyAllUsers,
+    checkSubscriptionExpirations
 };

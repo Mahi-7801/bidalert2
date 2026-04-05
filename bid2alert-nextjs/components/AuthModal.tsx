@@ -115,7 +115,7 @@ export default function AuthModal() {
             />
 
             {/* Modal Container */}
-            <div className="relative w-full max-w-[480px] bg-white border border-slate-100 rounded-[40px] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-all duration-500 transform scale-100">
+            <div className="relative w-full max-w-[480px] max-h-[90vh] bg-white border border-slate-100 rounded-[40px] overflow-y-auto shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15),0_0_1px_rgba(0,0,0,0.1)] transition-all duration-500 transform scale-100 scrollbar-hide">
 
                 {/* Close Button */}
                 <button

@@ -20,7 +20,7 @@ export default function Footer() {
                     // Clean the item name for searching (e.g., "Andhrapradesh Tenders" -> "Andhrapradesh")
                     const searchTerm = item.replace(/\s+Tenders?$/i, '').trim();
                     return (
-                        <span key={idx} className="flex items-center flex-shrink-0">
+                        <span key={idx} className="flex items-center">
                             <a
                                 href={`${baseUrl}${encodeURIComponent(searchTerm)}`}
                                 className="text-gray-400 hover:text-bid-green transition-colors break-words"
