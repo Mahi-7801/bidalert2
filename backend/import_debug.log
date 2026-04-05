@@ -1,0 +1,96 @@
+2026-03-09T10:38:50.103Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-09T10:38:50.145Z Detected Header Row
+2026-03-09T10:38:53.171Z FINISHED - Success: 638, Errors: 0
+2026-03-10T06:03:03.056Z START IMPORT - Table: temp_tenders_global, Rows: 41
+2026-03-10T06:03:03.067Z Detected Header Row
+2026-03-10T06:03:03.181Z FINISHED - Success: 40, Errors: 0
+2026-03-12T12:27:25.454Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-12T12:27:25.457Z Detected Header Row
+2026-03-12T12:27:28.272Z FINISHED - Success: 638, Errors: 0
+2026-03-12T12:27:43.241Z START IMPORT - Table: gem_tenders, Rows: 253
+2026-03-12T12:27:43.243Z Detected Header Row
+2026-03-12T12:27:44.489Z FINISHED - Success: 252, Errors: 0
+2026-03-12T12:27:56.974Z START IMPORT - Table: gem_tenders, Rows: 176
+2026-03-12T12:27:56.976Z Detected Header Row
+2026-03-12T12:27:57.536Z FINISHED - Success: 175, Errors: 0
+2026-03-12T12:29:09.135Z START IMPORT - Table: eprocurement_tenders, Rows: 23
+2026-03-12T12:29:09.139Z Detected Header Row
+2026-03-12T12:29:09.200Z FINISHED - Success: 22, Errors: 0
+2026-03-12T12:29:22.276Z START IMPORT - Table: eprocurement_tenders, Rows: 40
+2026-03-12T12:29:22.278Z Detected Header Row
+2026-03-12T12:29:22.462Z FINISHED - Success: 39, Errors: 0
+2026-03-12T12:29:31.770Z START IMPORT - Table: eprocurement_tenders, Rows: 1
+2026-03-12T12:29:31.772Z Detected Header Row
+2026-03-12T12:29:31.773Z FINISHED - Success: 0, Errors: 0
+2026-03-12T12:30:13.828Z START IMPORT - Table: temp_tenders_global, Rows: 79
+2026-03-12T12:30:13.830Z Detected Header Row
+2026-03-12T12:30:13.965Z FINISHED - Success: 78, Errors: 0
+2026-03-12T12:30:25.946Z START IMPORT - Table: temp_tenders_global, Rows: 41
+2026-03-12T12:30:25.947Z Detected Header Row
+2026-03-12T12:30:26.005Z FINISHED - Success: 40, Errors: 0
+2026-03-12T12:33:57.874Z START IMPORT - Table: ireps_tenders, Rows: 3
+2026-03-12T12:33:57.875Z Detected Header Row
+2026-03-12T12:33:57.886Z FINISHED - Success: 2, Errors: 0
+2026-03-13T11:10:52.358Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-13T11:10:52.373Z Detected Header Row
+2026-03-13T11:10:55.906Z FINISHED - Success: 638, Errors: 0
+2026-03-13T11:11:14.487Z START IMPORT - Table: gem_tenders, Rows: 176
+2026-03-13T11:11:14.491Z Detected Header Row
+2026-03-13T11:11:15.349Z FINISHED - Success: 175, Errors: 0
+2026-03-13T11:11:26.043Z START IMPORT - Table: gem_tenders, Rows: 253
+2026-03-13T11:11:26.057Z Detected Header Row
+2026-03-13T11:11:27.386Z FINISHED - Success: 252, Errors: 0
+2026-03-13T11:12:08.044Z START IMPORT - Table: eprocurement_tenders, Rows: 3
+2026-03-13T11:12:08.047Z Detected Header Row
+2026-03-13T11:12:08.070Z FINISHED - Success: 2, Errors: 0
+2026-03-13T11:12:21.346Z START IMPORT - Table: ireps_tenders, Rows: 3
+2026-03-13T11:12:21.347Z Detected Header Row
+2026-03-13T11:12:21.366Z FINISHED - Success: 2, Errors: 0
+2026-03-13T11:12:36.559Z START IMPORT - Table: temp_tenders_global, Rows: 79
+2026-03-13T11:12:36.563Z Detected Header Row
+2026-03-13T11:12:36.741Z FINISHED - Success: 78, Errors: 0
+2026-03-13T11:22:36.646Z START IMPORT - Table: gem_tenders, Rows: 8
+2026-03-13T11:22:36.649Z Detected Header Row
+2026-03-13T11:22:36.700Z FINISHED - Success: 7, Errors: 0
+2026-03-13T11:22:48.673Z START IMPORT - Table: eprocurement_tenders, Rows: 3671
+2026-03-13T11:22:48.678Z No Header Row - Using Default 16-Col Map
+2026-03-13T11:23:05.273Z FINISHED - Success: 3671, Errors: 0
+2026-03-13T11:56:51.128Z START IMPORT - Table: ireps_tenders, Rows: 3
+2026-03-13T11:56:51.169Z Detected Header Row
+2026-03-13T11:56:51.255Z FINISHED - Success: 2, Errors: 0
+2026-03-13T12:09:27.784Z START IMPORT - Table: gem_tenders, Rows: 8
+2026-03-13T12:09:27.787Z Detected Header Row
+2026-03-13T12:09:27.820Z FINISHED - Success: 7, Errors: 0
+2026-03-13T12:49:37.928Z START IMPORT - Table: eprocurement_tenders, Rows: 3671
+2026-03-13T12:49:37.930Z Mapping used: {"tender_id":"0","closing_date":"15","name_of_work":"2","gemdoclink":"12"}
+2026-03-24T09:04:51.734Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-24T09:04:51.765Z Mapping used: {"tender_id":"0","closing_date":"15","tender_dept":"1","name_of_work":"2","gemdoclink":"12"}
+2026-03-24T09:05:32.473Z START IMPORT - Table: eprocurement_tenders, Rows: 176
+2026-03-24T09:05:32.480Z Mapping used: {"tender_id":"0","closing_date":"15","tender_dept":"4","name_of_work":"2","gemdoclink":"12"}
+2026-03-24T09:06:02.656Z START IMPORT - Table: ireps_tenders, Rows: 3
+2026-03-24T09:06:02.662Z Detected Header Row
+2026-03-24T09:06:02.684Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","emd_exemption":"7","tender_ecv":"8","state_name":"9","location":"10","apply_mode":"11","source_site":"12","gemdoclink":"13","closing_date":"15"}
+2026-03-24T09:06:28.655Z START IMPORT - Table: temp_tenders_global, Rows: 79
+2026-03-24T09:06:28.666Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","currency":"7","tender_ecv":"8","country":"9","city":"10","apply_mode":"11","source_site":"12","globaldoclink":"13","mfa":"14","closing_date":"15"}
+2026-03-24T09:08:49.957Z START IMPORT - Table: gem_tenders, Rows: 253
+2026-03-24T09:08:49.961Z Mapping used: {"tender_id":"0","closing_date":"15","tender_dept":"1","name_of_work":"2","gemdoclink":"12"}
+2026-03-24T09:09:24.796Z START IMPORT - Table: eprocurement_tenders, Rows: 8
+2026-03-24T09:09:24.800Z Detected Header Row
+2026-03-24T09:09:24.806Z Mapping used: {"tender_dept":"4","tender_id":"0","closing_date":"15","name_of_work":"2","gemdoclink":"12"}
+2026-03-24T09:11:54.853Z START IMPORT - Table: temp_tenders_global, Rows: 41
+2026-03-24T09:11:54.856Z Detected Header Row
+2026-03-24T09:11:54.860Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","currency":"7","tender_ecv":"8","country":"9","location":"10","apply_mode":"11","source_site":"12","gemdoclink":"13","mfa":"14","closing_date":"15"}
+2026-03-24T09:18:30.504Z START IMPORT - Table: temp_tenders_global, Rows: 79
+2026-03-24T09:18:30.523Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","currency":"7","tender_ecv":"8","country":"9","city":"10","apply_mode":"11","source_site":"12","globaldoclink":"13","mfa":"14","closing_date":"15"}
+2026-03-24T11:11:06.573Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-24T11:11:06.577Z Detected Header Row
+2026-03-24T11:11:06.583Z Mapping used: {"tender_dept":"4","tender_id":"1","closing_date":"15","name_of_work":"13","gemdoclink":"12"}
+2026-03-25T07:52:13.192Z START IMPORT - Table: gem_tenders, Rows: 639
+2026-03-25T07:52:13.194Z Detected Header Row
+2026-03-25T07:52:13.199Z Mapping used: {"tender_dept":"4","tender_id":"1","closing_date":"15","name_of_work":"13","gemdoclink":"12"}
+2026-04-05T05:33:21.610Z START IMPORT - Table: gem_tenders, Rows: 581
+2026-04-05T05:33:21.617Z Detected Header Row
+2026-04-05T05:33:21.629Z Mapping used: {"tender_dept":"4","tender_id":"1","closing_date":"15","name_of_work":"13","gemdoclink":"12"}
+2026-04-05T05:48:33.723Z START IMPORT - Table: temp_tenders_global, Rows: 41
+2026-04-05T05:48:33.726Z Detected Header Row
+2026-04-05T05:48:33.729Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","currency":"7","tender_ecv":"8","country":"9","location":"10","apply_mode":"11","source_site":"12","globaldoclink":"13","mfa":"14","closing_date":"15"}

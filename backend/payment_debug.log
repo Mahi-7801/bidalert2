@@ -1,0 +1,9 @@
+[2026-03-10T05:53:50.372Z] ✅ Verification Request: Order order_SPPjr4PUBeZZPM, Payment pay_SPPkcKqE8Kma41
+[2026-03-10T05:53:54.582Z] ✅ Receipt [pay_SPPkcKqE8Kma41] sent successfully to haneefsk921@gmail.com (and BCC support@bidalert.in). MsgID: <868c4374-9a1e-28e8-9dc9-b7ea6ce34815@bidalert.in>
+[2026-03-13T09:11:13.750Z] ❌ Razorpay Order Creation Failed: Cannot read properties of undefined (reading 'status') | User: 4 | Amount: 1
+[2026-03-13T09:12:04.219Z] ❌ Razorpay Order Creation Failed: Cannot read properties of undefined (reading 'status') | User: 4 | Amount: 1
+[2026-03-13T09:14:56.837Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1
+[2026-03-13T09:15:02.880Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1
+[2026-03-13T09:18:13.567Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1
+[2026-03-13T09:18:23.257Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 3500
+[2026-03-13T09:18:58.158Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1

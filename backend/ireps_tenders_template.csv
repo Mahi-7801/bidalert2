@@ -1,0 +1,3 @@
+bidalert_user,tender_id,name_of_work,tender_category,tender_dept,tender_qty,tender_emd,emd_exemption,tender_ecv,state_name,location,apply_mode,source_site,gemdoclink,doclinks,closing_date
+demo_user,IREPS/2026/WR/3000001,Railway Track Maintenance - Western Railway,Services - Railway Maintenance,Western Railway,150 KM,1000000,No,50000000,Gujarat,Ahmedabad,Online,https://ireps.gov.in,,https://ireps.gov.in/docs/3000001.pdf,22-02-2026 17:00:00
+demo_user,IREPS/2026/SR/3000002,Supply of Railway Coaches,Goods - Railway Equipment,Southern Railway,50 Units,10000000,No,500000000,Tamil Nadu,Chennai,Online,https://ireps.gov.in,,https://ireps.gov.in/docs/3000002.pdf,18-02-2026 15:00:00

@@ -1,0 +1,27 @@
+{
+    "name": "BidAlert - Tender Information Portal",
+    "short_name": "BidAlert",
+    "description": "India's Most Trusted Tender Information Portal. Access 100,000+ active tenders.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f1b35",
+    "theme_color": "#0f1b35",
+    "icons": [
+        {
+            "src": "/icon",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
+        {
+            "src": "/apple-icon",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "/bidalert_logo.png",
+            "sizes": "any",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

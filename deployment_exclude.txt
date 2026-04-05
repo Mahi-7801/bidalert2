@@ -1,0 +1,17 @@
+node_modules
+.git
+.next
+.env
+.env.local
+*.log
+logs
+deployment
+bidalert-deployment.zip
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+.cache
+coverage
+.vscode
+.idea

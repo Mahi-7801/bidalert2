@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[18150,["/_next/static/chunks/c4bd24a612de8899.js","/_next/static/chunks/d0feb5f11ff05330.js","/_next/static/chunks/f1effed94d3f0f98.js"],"ViewportBoundary"]
+3:I[18150,["/_next/static/chunks/c4bd24a612de8899.js","/_next/static/chunks/d0feb5f11ff05330.js","/_next/static/chunks/f1effed94d3f0f98.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"9H_C9Ry7377t_fARqSFN9","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"BidAlert - India's Most Trusted Tender Information Portal"}],["$","meta","1",{"name":"description","content":"Access over 100,000+ active tenders with our smart tools. Upload documents, get WhatsApp alerts, and use BidGPT for analysis."}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
