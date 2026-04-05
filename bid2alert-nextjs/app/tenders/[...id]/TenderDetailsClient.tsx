@@ -294,7 +294,7 @@ export default function TenderDetailsClient() {
                         <span className="text-[10px] sm:text-sm font-bold text-white/90">Premium Tender Access Enabled</span>
                         <div className="hidden sm:block h-1 w-1 bg-white/20 rounded-full"></div>
                         <span className="text-[9px] sm:text-xs font-black bg-white/10 px-3 py-1 rounded-full border border-white/10 uppercase tracking-tighter">
-                            Valid till: 15 Oct 2026
+                            Valid till: {user?.plan_expiry_date ? new Date(user.plan_expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                         </span>
                     </div>
                 </div>
@@ -348,7 +348,7 @@ export default function TenderDetailsClient() {
                         {!isPaid ? (
                             <Link href={`/plans?callbackUrl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`} className="flex-1 lg:flex-none bg-bid-dark text-white font-black py-4 px-8 rounded-2xl hover:bg-bid-green hover:text-bid-dark transition-all flex items-center justify-center gap-3 shadow-2xl text-xs sm:text-sm border-2 border-transparent hover:border-bid-green group">
                                 <Lock size={18} className="text-bid-green group-hover:text-bid-dark transition-colors" />
-                                Unlock Full Tender (₹XX)
+                                Unlock Full Tender (Premium)
                             </Link>
                         ) : (
                             <div className="flex gap-2 w-full lg:w-auto">

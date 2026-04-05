@@ -25,6 +25,8 @@ export default function Header() {
     const [showUserNotifications, setShowUserNotifications] = useState(false);
     const [unreadUserCount, setUnreadUserCount] = useState(0);
     const [logoClickCount, setLogoClickCount] = useState(0);
+    const [showExpiryWarning, setShowExpiryWarning] = useState(false);
+    const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
     const [showAdminLoginTrigger, setShowAdminLoginTrigger] = useState(false);
     const clickResetTimerRef = useRef<NodeJS.Timeout | null>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -130,18 +132,36 @@ export default function Header() {
                 Notification.requestPermission();
             }
 
+            if (user?.plan_expiry_date) {
+                const expiryDate = new Date(user.plan_expiry_date);
+                const now = new Date();
+                const diffTime = expiryDate.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                setDaysRemaining(diffDays);
+
+                if (diffDays >= 0 && diffDays <= 3) {
+                    setShowExpiryWarning(true);
+                } else {
+                    setShowExpiryWarning(false);
+                }
+            } else {
+                setShowExpiryWarning(false);
+            }
+
             return () => {
                 window.removeEventListener('scroll', handleScroll);
                 document.removeEventListener('mousedown', handleClickOutside);
                 clearInterval(interval);
             };
+        } else {
+            setShowExpiryWarning(false);
         }
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isAuthenticated, user?.role, showUserNotifications]);
+    }, [isAuthenticated, user?.role, user?.plan_expiry_date, showUserNotifications]);
 
     // Body scroll lock for mobile menu
     useEffect(() => {
@@ -342,8 +362,15 @@ export default function Header() {
 
     return (
         <>
+            {showExpiryWarning && (
+                <div className="fixed top-0 left-0 right-0 z-[110] bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] sm:text-xs font-black py-2.5 px-4 text-center flex items-center justify-center gap-4 shadow-lg border-b border-white/10 uppercase tracking-widest">
+                    <Sparkles size={14} className="animate-pulse shrink-0" />
+                    <span>Your plan expires in {daysRemaining === 0 ? 'few hours' : `${daysRemaining} days`}. Renew now for uninterrupted service!</span>
+                    <Link href="/plans" className="bg-white text-orange-600 px-4 py-1 rounded-full hover:bg-opacity-90 transition-all hover:scale-105 active:scale-95 shadow-sm">Renew Now</Link>
+                </div>
+            )}
             <header
-                className="fixed top-0 left-0 right-0 z-[100] w-full"
+                className={`fixed ${showExpiryWarning ? 'top-[42px] sm:top-[44px]' : 'top-0'} left-0 right-0 z-[100] w-full`}
             >
                 <div className="w-full mx-auto transition-all duration-500 ease-in-out">
                     <div
