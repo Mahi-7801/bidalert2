@@ -809,12 +809,57 @@ app.post('/api/admin/auto-send-matches', authenticateToken, isAdmin, async (req,
             </div>
         `;
 
+        let emailAttachments = [];
+        if (!req.body.customReply && tenders.length > 0) {
+            try {
+                const exceljs = require('exceljs');
+                const workbook = new exceljs.Workbook();
+                const worksheet = workbook.addWorksheet('Matched Tenders');
+
+                worksheet.columns = [
+                    { header: 'S.No', key: 'sno', width: 6 },
+                    { header: 'Tender Title', key: 'title', width: 60 },
+                    { header: 'Reference No.', key: 'ref', width: 25 },
+                    { header: 'Authority/Department', key: 'authority', width: 40 },
+                    { header: 'Location', key: 'location', width: 20 },
+                    { header: 'Deadline', key: 'deadline', width: 20 }
+                ];
+
+                // Style the header row
+                worksheet.getRow(1).font = { bold: true };
+                worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D1B2A' } };
+                worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+
+                tenders.forEach((t, i) => {
+                    worksheet.addRow({
+                        sno: i + 1,
+                        title: t.title || 'N/A',
+                        ref: t.reference_number || t.id || 'N/A',
+                        authority: t.authority || 'N/A',
+                        location: t.state || t.country || t.city || 'N/A',
+                        deadline: t.deadline || 'N/A'
+                    });
+                });
+
+                const buffer = await workbook.xlsx.writeBuffer();
+                emailAttachments.push({
+                    filename: `Tender_Matches_${new Date().toISOString().split('T')[0]}.xlsx`,
+                    content: buffer,
+                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+            } catch (err) {
+                console.error("Failed to generate Excel attachment:", err);
+                // Continue sending email without attachment if generation fails
+            }
+        }
+
         // Send email using the centralized transporter
         await transporter.sendMail({
             from: '"BidAlert Support" <support@bidalert.in>',
             to: request.user_email,
             subject: req.body.customReply ? `Response to your Inquiry - BidAlert` : `Your Tender Matches - BidAlert (${tenders.length} Found)`,
-            html: emailHtml
+            html: emailHtml,
+            attachments: emailAttachments
         });
 
         // Add in-app notification for the user
