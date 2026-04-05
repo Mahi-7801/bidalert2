@@ -334,7 +334,9 @@ export default function TenderDetailsClient() {
                         <div className="flex flex-wrap items-center gap-3 sm:gap-8 text-[#4A5568]">
                             <div className="flex items-center gap-1.5 sm:gap-2.5">
                                 <Building size={14} className="text-bid-green sm:w-[18px] sm:h-[18px]" />
-                                <span className="text-xs sm:text-sm font-bold uppercase tracking-tight">{safeTender.authority}</span>
+                                <span className="text-xs sm:text-sm font-bold uppercase tracking-tight">
+                                    {getCleanTitle(safeTender.title, safeTender.id, safeTender.authority) === safeTender.authority ? `Ref: ${String(safeTender.reference_number || safeTender.id || '').replace(/^BIDALERT-/, 'BA-')}` : safeTender.authority}
+                                </span>
                             </div>
                             <div className="flex items-center gap-1.5 sm:gap-2.5">
                                 <MapPin size={14} className="text-bid-green sm:w-[18px] sm:h-[18px]" />

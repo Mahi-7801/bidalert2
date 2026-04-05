@@ -105,7 +105,7 @@ export default function GlobalTenderDetailsClient() {
     const getCleanTitle = (title: string, id: string | number, authority?: string) => {
         if (!title || typeof title !== 'string') return `Tender ${id}`;
         if (title.toLowerCase().startsWith('http')) {
-            if (authority && authority.length > 5) return `International Tender - ${authority}`;
+            if (authority && authority.length > 5 && authority.toLowerCase() !== 'refer document' && authority.toLowerCase() !== 'refer doc') return authority;
             return `International Tender - ${id}`;
         }
         return title;
@@ -151,10 +151,10 @@ export default function GlobalTenderDetailsClient() {
                             {/* Info Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 p-4 sm:p-8 bg-white rounded-2xl sm:rounded-[32px] border border-gray-100 shadow-sm">
                                 <div className="space-y-1.5 sm:space-y-2 text-center md:text-left">
-                                    <p className="text-[9px] sm:text-[10px] uppercase font-black text-gray-400 tracking-[0.2em] leading-none mb-1">Authority</p>
+                                    <p className="text-[9px] sm:text-[10px] uppercase font-black text-gray-400 tracking-[0.2em] leading-none mb-1">{getCleanTitle(tender.title, tender.id, tender.authority) === tender.authority ? 'Tender ID' : 'Authority'}</p>
                                     <div className="flex items-center justify-center md:justify-start gap-1 sm:gap-2">
                                         <Building className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-bid-green opacity-40 shrink-0" />
-                                        <p className="font-bold text-gray-800 text-xs sm:text-base truncate">{tender.authority || 'International'}</p>
+                                        <p className="font-bold text-gray-800 text-xs sm:text-base truncate">{getCleanTitle(tender.title, tender.id, tender.authority) === tender.authority ? tender.id : (tender.authority || 'International')}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2 text-center md:text-left border-l border-gray-100 pl-4 sm:pl-8">
