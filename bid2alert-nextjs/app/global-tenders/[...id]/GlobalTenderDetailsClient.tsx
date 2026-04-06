@@ -27,7 +27,7 @@ interface GlobalTender {
 export default function GlobalTenderDetailsClient() {
     const params = useParams();
     const router = useRouter();
-    const { isAuthenticated, user, isLoading: authLoading, refreshUser } = useAuth();
+    const { isAuthenticated, user, isLoading: authLoading, refreshUser, openLogin } = useAuth();
     const [tender, setTender] = useState<GlobalTender | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -48,8 +48,7 @@ export default function GlobalTenderDetailsClient() {
     useEffect(() => {
         if (authLoading) return;
         if (!isAuthenticated) {
-            router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
-            return;
+            openLogin();
         }
 
         if (!id) return;

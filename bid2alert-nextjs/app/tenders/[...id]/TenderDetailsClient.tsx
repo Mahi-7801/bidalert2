@@ -33,7 +33,7 @@ interface Tender {
 export default function TenderDetailsClient() {
     const params = useParams();
     const router = useRouter();
-    const { isAuthenticated, user, isLoading: authLoading, refreshUser, openRegister } = useAuth();
+    const { isAuthenticated, user, isLoading: authLoading, refreshUser, openLogin, openRegister } = useAuth();
     const [tender, setTender] = useState<Tender | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -81,14 +81,12 @@ export default function TenderDetailsClient() {
         fetchTender();
     }, [id, authLoading]);
 
-    // Redirect logic based on user status
+    // Handle login prompt for unauthenticated users
     useEffect(() => {
-        // Only redirect once auth status is confirmed and we're not loading
         if (!authLoading && !isAuthenticated) {
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-            router.push(`/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+            openLogin();
         }
-    }, [authLoading, isAuthenticated, router]);
+    }, [authLoading, isAuthenticated, openLogin]);
 
     const isPaid = user?.subscription_status === 'pro' || user?.role === 'admin';
 
