@@ -426,18 +426,7 @@ export default function Header() {
                                     </div>
                                 </Link>
 
-                                {showAdminLoginTrigger && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            openLogin();
-                                        }}
-                                        className="px-3 py-1 bg-bid-green text-bid-dark text-[10px] font-black rounded-full transition-all shadow-lg animate-bounce hover:scale-105 active:scale-95"
-                                    >
-                                        ADMIN LOGIN
-                                    </button>
-                                )}
+                                {/* Admin login trigger hidden — removed to avoid confusion */}
                             </div>
 
                             {/* Action Section */}
@@ -895,6 +884,14 @@ export default function Header() {
                                 <Sparkles size={14} className={pathname === '/upload' ? 'text-bid-green' : 'text-white/30'} />
                                 Bid Analyser
                             </Link>
+
+                            <Link
+                                href="/plans"
+                                onClick={() => { setMobileMenuOpen(false); setMobileSectionOpen(null); }}
+                                className={`py-4 text-[11px] font-black uppercase tracking-[0.2em] border-b border-white/5 transition-colors ${pathname === '/plans' ? 'text-bid-green' : 'text-white/40 hover:text-white'}`}
+                            >
+                                Plans
+                            </Link>
                         </div>
                         <div className="mt-auto pt-5 sm:pt-8 border-t border-white/10 flex flex-col gap-3 sm:gap-4">
                             {!isAuthenticated ? (
@@ -914,6 +911,16 @@ export default function Header() {
                                 </>
                             ) : (
                                 <div className="flex flex-col gap-3 w-full">
+                                    {/* User Profile Card — mirrors desktop behaviour */}
+                                    <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                                        <span className="shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-bid-green/20 text-bid-green font-black text-sm uppercase">
+                                            {user?.name?.[0] || 'U'}
+                                        </span>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[12px] font-black text-white truncate">{user?.name || 'User'}</span>
+                                            <span className="text-[10px] text-white/40 truncate">{user?.email || ''}</span>
+                                        </div>
+                                    </div>
                                     <Link
                                         href="/my-requests"
                                         onClick={() => setMobileMenuOpen(false)}

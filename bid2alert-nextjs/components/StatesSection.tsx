@@ -137,86 +137,92 @@ export default function StatesSection() {
                     </motion.p>
                 </div>
 
-                {/* Carousel Wrapper */}
-                <div
-                    ref={scrollContainerRef}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                    className="flex overflow-x-auto gap-3 sm:gap-6 pb-8 sm:pb-12 px-1 scroll-smooth no-scrollbar"
-                    style={{
-                        scrollSnapType: 'x mandatory',
-                        msOverflowStyle: 'none',  /* IE and Edge */
-                        scrollbarWidth: 'none'    /* Firefox */
-                    }}
-                >
-                    {/* Hide scrollbar for WebKit (Chrome, Safari) */}
-                    <style jsx>{`
+                {/* Carousel Wrapper with Fading Edges */}
+                <div className="relative group/carousel px-2 sm:px-0">
+                    {/* Fading Edge Masks - more prominent on mobile */}
+                    <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-32 bg-gradient-to-r from-white via-white/80 to-transparent z-20 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-32 bg-gradient-to-l from-white via-white/80 to-transparent z-20 pointer-events-none" />
+
+                    <div
+                        ref={scrollContainerRef}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                        className="flex overflow-x-auto gap-5 sm:gap-10 pb-12 sm:pb-20 px-8 sm:px-32 scroll-smooth no-scrollbar"
+                        style={{
+                            scrollSnapType: 'x mandatory',
+                            msOverflowStyle: 'none',  /* IE and Edge */
+                            scrollbarWidth: 'none'    /* Firefox */
+                        }}
+                    >
+                        {/* Hide scrollbar for WebKit (Chrome, Safari) */}
+                        <style jsx>{`
                         div::-webkit-scrollbar {
                             display: none;
                         }
                     `}</style>
-                    {allFeaturedStates.map((state, index) => {
-                        const count = counts[state.name] || 0;
+                        {allFeaturedStates.map((state, index) => {
+                            const count = counts[state.name] || 0;
 
-                        return (
-                            <motion.div
-                                key={state.name}
-                                // @ts-ignore
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: index * 0.05 }}
-                                className="min-w-[140px] sm:min-w-[250px] scroll-snap-align-start"
-                                style={{ scrollSnapAlign: 'start' }}
-                            >
-                                <Link
-                                    href={`/tenders?state=${encodeURIComponent(state.name)}`}
-                                    className="group block bg-white border-2 border-slate-100 p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] hover:border-bid-green/40 transition-all duration-300 hover:shadow-2xl hover:shadow-bid-green/10 min-h-[180px] sm:min-h-[300px] relative overflow-hidden flex flex-col items-center justify-center text-center"
+                            return (
+                                <motion.div
+                                    key={state.name}
+                                    // @ts-ignore
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="min-w-[170px] sm:min-w-[300px] scroll-snap-align-center"
+                                    style={{ scrollSnapAlign: 'center' }}
                                 >
-                                    {/* Trend Badge — only show when there is real live data */}
-                                    {!isLoading && count > 0 && (
-                                        <div className="absolute top-2 right-2 sm:top-5 sm:right-5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 z-10">
-                                            <TrendingUp size={8} className="text-emerald-600 sm:w-[10px]" />
-                                            <span className="text-[8px] sm:text-[10px] font-black text-emerald-600 tracking-wider font-mono">{state.trend}</span>
+                                    <Link
+                                        href={`/tenders?state=${encodeURIComponent(state.name)}`}
+                                        className="group block bg-white border-2 border-slate-50 p-5 sm:p-10 rounded-[2rem] sm:rounded-[4rem] hover:border-bid-green/40 transition-all duration-500 hover:shadow-2xl hover:shadow-bid-green/15 min-h-[200px] sm:min-h-[420px] relative overflow-hidden flex flex-col items-center justify-center text-center"
+                                    >
+                                        {/* Trend Badge */}
+                                        {!isLoading && count > 0 && (
+                                            <div className="absolute top-4 right-4 sm:top-8 sm:right-8 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 z-10 transform group-hover:scale-110 transition-transform">
+                                                <TrendingUp size={10} className="text-emerald-600 sm:w-3" />
+                                                <span className="text-[9px] sm:text-[12px] font-black text-emerald-600 tracking-wider font-mono">{state.trend}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Centered Map Container */}
+                                        <div className="relative w-[75%] sm:w-[85%] aspect-square bg-slate-50/70 rounded-[1.5rem] sm:rounded-[3rem] overflow-hidden mb-6 sm:mb-10 p-6 sm:p-10 flex items-center justify-center border border-slate-100/50 group-hover:bg-white transition-all duration-700 group-hover:shadow-inner group-hover:rotate-3">
+                                            <div className="relative w-full h-full flex items-center justify-center">
+                                                <Image
+                                                    src={state.image}
+                                                    alt={state.name}
+                                                    fill
+                                                    className="object-contain drop-shadow-xl group-hover:scale-125 transition-transform duration-1000 ease-in-out"
+                                                />
+                                            </div>
                                         </div>
-                                    )}
 
-                                    {/* Centered Map Container */}
-                                    <div className="relative w-[65%] sm:w-[70%] aspect-square bg-slate-50/50 rounded-2xl overflow-hidden mb-3 p-2 flex items-center justify-center border border-slate-100/50 group-hover:bg-white transition-all duration-500">
-                                        <div className="relative w-full h-full">
-                                            <Image
-                                                src={state.image}
-                                                alt={state.name}
-                                                fill
-                                                className="object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-700 ease-out"
-                                            />
+                                        {/* Content */}
+                                        <h3 className="text-sm sm:text-2xl font-black text-slate-900 mb-3 sm:mb-4 uppercase tracking-tighter group-hover:text-bid-greenhover transition-colors line-clamp-2 px-1">
+                                            {state.name}
+                                        </h3>
+
+                                        <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-100 mb-2 sm:mb-4 group-hover:bg-bid-green/5 transition-all">
+                                            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bid-green opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-bid-green"></span>
+                                            </span>
+                                            <span className="text-xs sm:text-base font-black text-slate-800">
+                                                {isLoading ? '...' : (count > 0 ? `${count.toLocaleString()}` : '0')}
+                                                <span className="text-[9px] sm:text-[11px] text-slate-400 ml-1.5 font-black">LIVE</span>
+                                            </span>
                                         </div>
-                                    </div>
 
-                                    {/* Content */}
-                                    <h3 className="text-xs sm:text-lg font-black text-slate-900 mb-1.5 sm:mb-2 uppercase tracking-tight group-hover:text-bid-greenhover transition-colors line-clamp-2 px-1">
-                                        {state.name}
-                                    </h3>
-
-                                    <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-100 mb-0.5 sm:mb-1">
-                                        <span className="relative flex h-1 w-1 sm:h-1.5 sm:w-1.5">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bid-green opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-1 w-1 sm:h-1.5 sm:w-1.5 bg-bid-green"></span>
-                                        </span>
-                                        <span className="text-[10px] sm:text-xs font-black text-slate-800">
-                                            {isLoading ? '...' : (count > 0 ? `${count.toLocaleString()}` : '0')}
-                                            <span className="text-[8px] sm:text-[9px] text-slate-400 ml-1 font-bold">LIVE</span>
-                                        </span>
-                                    </div>
-
-                                    {/* Absolute bottom indicator */}
-                                    <div className="absolute bottom-4 sm:bottom-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <ArrowRight size={14} className="text-bid-greenhover" />
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        );
-                    })}
+                                        {/* Hover arrow hint */}
+                                        <div className="absolute bottom-6 sm:bottom-10 opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0">
+                                            <ArrowRight size={20} className="text-bid-greenhover" strokeWidth={3} />
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* Footer Link */}
