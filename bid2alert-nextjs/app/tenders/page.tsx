@@ -77,7 +77,7 @@ const formatTenderValue = (value: any) => {
     if (cleanValue === '' || cleanValue === '0' || cleanValue === '0.00') return 'Refer Doc';
     const num = Number(cleanValue);
     if (!isNaN(num) && num > 0) {
-        return `â‚¹${num.toLocaleString('en-IN')}`;
+        return `₹${num.toLocaleString('en-IN')}`;
     }
     // If it's a descriptive string like "Exempted", show it
     return value;
@@ -622,10 +622,6 @@ function TendersContent() {
                             ) : tenders.length > 0 ? (
                                 <>
                                     {tenders.map((tender, index) => {
-                                        // If ANY filter is active, ALL returned results are already matched by the API → highlight all cards.
-                                        // Using simple boolean: are any filters set?
-                                        const hasActiveFilter = !!(filters.q || filters.type || filters.category || filters.state || filters.ministry || filters.department || filters.authority || filters.portal || filters.city);
-
                                         // Combined query for highlighting all matching terms in the card
                                         const combinedHighlightQuery = [
                                             filters.q,
@@ -843,4 +839,3 @@ export default function Page() {
         </Suspense>
     );
 }
-

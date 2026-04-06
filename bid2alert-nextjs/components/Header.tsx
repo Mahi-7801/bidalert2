@@ -19,7 +19,7 @@ export default function Header() {
     const [scrolled, setScrolled] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [archiveYears, setArchiveYears] = useState<number[]>([]);
+    const [archiveYears, setArchiveYears] = useState<string[]>([]);
     const [notificationCount, setNotificationCount] = useState(0); // Admin unread requirements
     const [userNotifications, setUserNotifications] = useState<any[]>([]); // General user notifications
     const [showUserNotifications, setShowUserNotifications] = useState(false);
@@ -223,16 +223,7 @@ export default function Header() {
                     subLinks: archiveYears.length > 0 ? archiveYears.map(year => ({
                         label: `${year} Tenders`,
                         href: `/tenders?status=archive&nav=india&year=${year}`
-                    })) : [
-                        { label: '2025 Tenders', href: '/tenders?status=archive&nav=india&year=2025' },
-                        { label: '2024 Tenders', href: '/tenders?status=archive&nav=india&year=2024' },
-                        { label: '2023 Tenders', href: '/tenders?status=archive&nav=india&year=2023' },
-                        { label: '2022 Tenders', href: '/tenders?status=archive&nav=india&year=2022' },
-                        { label: '2021 Tenders', href: '/tenders?status=archive&nav=india&year=2021' },
-                        { label: '2020 Tenders', href: '/tenders?status=archive&nav=india&year=2020' },
-                        { label: '2019 Tenders', href: '/tenders?status=archive&nav=india&year=2019' },
-                        { label: '2018 Tenders', href: '/tenders?status=archive&nav=india&year=2018' },
-                    ]
+                    })) : undefined
                 },
                 { label: 'Empanelment', href: '/tenders?type=Empanelment' },
                 { label: 'EOI - Tenders', href: '/tenders?type=EOI' },
@@ -267,10 +258,7 @@ export default function Header() {
                             subLinks: archiveYears.length > 0 ? archiveYears.map(year => ({
                                 label: `${year} ARCHIVE`,
                                 href: `/tenders?status=archive&portal=ireps&year=${year}`
-                            })) : [
-                                { label: '2025 ARCHIVE', href: '/tenders?status=archive&portal=ireps&year=2025' },
-                                { label: '2024 ARCHIVE', href: '/tenders?status=archive&portal=ireps&year=2024' },
-                            ]
+                            })) : undefined
                         },
                         { label: 'IREPS SERVICE', href: '/tenders?portal=ireps&type=Service' },
                         { label: 'IREPS WORK', href: '/tenders?portal=ireps&type=Work' },
@@ -289,10 +277,7 @@ export default function Header() {
                     subLinks: archiveYears.length > 0 ? archiveYears.map(year => ({
                         label: `${year} GLOBAL ARCHIVE`,
                         href: `/tenders?status=archive&portal=global&year=${year}`
-                    })) : [
-                        { label: '2025 ARCHIVE', href: '/tenders?status=archive&portal=global&year=2025' },
-                        { label: '2024 ARCHIVE', href: '/tenders?status=archive&portal=global&year=2024' },
-                    ]
+                    })) : undefined
                 },
                 { label: 'Country', href: '/global-tender-countries' },
                 { label: 'City', href: '/global-tender-cities' },

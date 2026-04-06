@@ -1188,14 +1188,16 @@ async function getTendersLogic(queryParams) {
     // Build WHERE conditions for all three tables
     let whereConditions = '1=1';
 
-    // Use a more flexible date check that works with YYYY-MM-DD and DD-MM-YYYY
+    // Use a more flexible date parsing expression
+    const dateExpr = `(CASE 
+        WHEN closing_date REGEXP '^[0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2}' THEN STR_TO_DATE(REPLACE(LEFT(closing_date, 10), '/', '-'), '%Y-%m-%d')
+        WHEN closing_date REGEXP '^[0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{4}' THEN STR_TO_DATE(REPLACE(LEFT(closing_date, 10), '/', '-'), '%d-%m-%Y')
+        ELSE NULL
+    END)`;
+
     if (include_expired !== 'true' && status !== 'archive' && status !== 'closed' && status !== 'all') {
         whereConditions += ` AND (
-            CASE 
-                WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                ELSE NULL
-            END >= CURDATE()
+            ${dateExpr} >= CURDATE()
             OR closing_date IS NULL OR closing_date = '' OR closing_date = 'N/A'
         )`;
     }
@@ -1265,23 +1267,27 @@ async function getTendersLogic(queryParams) {
         params.push(`%${type}%`, `%${type}%`, `%${type}%`);
     }
 
-    // When browsing archive WITHOUT a specific year, only show recently expired (last 20 days)
-    // When a year is provided (historical browsing), show all matching by year
-    if ((status === 'archive' || status === 'closed') && !year) {
+    // When browsing archive, always ensure we only show expired tenders (if not including expired)
+    if (status === 'archive' || status === 'closed') {
+        whereConditions += ` AND ${dateExpr} < CURDATE() `;
+
+        // When NO year is provided, only show recently expired (last 20 days)
+        if (!year) {
+            whereConditions += ` AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 20 DAY) `;
+        }
+        whereConditions += ` AND closing_date IS NOT NULL AND closing_date != '' AND closing_date != 'N/A' `;
+    }
+
+    // Apply global year filter to all tables if provided
+    if (year) {
         whereConditions += ` AND (
             CASE 
-                WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                ELSE NULL
-            END < CURDATE()
-            AND 
-            CASE 
-                WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                ELSE NULL
-            END >= DATE_SUB(CURDATE(), INTERVAL 20 DAY)
-            AND closing_date IS NOT NULL AND closing_date != '' AND closing_date != 'N/A'
+                WHEN closing_date REGEXP '^[0-9]{4}[-/]' THEN LEFT(closing_date, 4) = ?
+                WHEN closing_date REGEXP '[-/][0-9]{4}' THEN RIGHT(LEFT(closing_date, 10), 4) = ?
+                ELSE FALSE
+            END
         )`;
+        params.push(year, year);
     }
 
     if (q) {
@@ -1359,8 +1365,7 @@ async function getTendersLogic(queryParams) {
         apply_mode,
         closing_date as deadline,
         CASE 
-            WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d') < CURDATE() THEN 'archive'
-            WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' AND STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y') < CURDATE() THEN 'archive'
+            WHEN ${dateExpr} < CURDATE() THEN 'archive'
             ELSE 'active'
         END as status,
         source_site,
@@ -1388,77 +1393,61 @@ async function getTendersLogic(queryParams) {
             }
         }
 
-        // Apply year filter for archive table
-        if (year) {
-            archiveWhere += ` AND (
-                CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN LEFT(closing_date, 4) = ?
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN RIGHT(LEFT(closing_date, 10), 4) = ?
-                    ELSE FALSE
-                END
-            )`;
-            archiveValues.push(year, year);
-        }
-
-        // Apply shared filters (state, query, etc.) to archive query
-        // Re-using params and whereConditions from above for archive logic
-        // But need to handle the params properly as they are shared with other tables
-        queryParts.push(`SELECT ${commonColumns}, source_table FROM archived_tenders WHERE ${whereConditions} AND ${archiveWhere}`);
+        // archiveWhere already has whereConditions applied which includes our year filter
+        queryParts.push(`SELECT ${commonColumns}, source_table FROM archived_tenders WHERE ${whereConditions} ${archiveWhere !== '1=1' ? ' AND ' + archiveWhere : ''}`);
         queryValues.push(...params, ...archiveValues);
-        countParts.push(`(SELECT COUNT(*) FROM archived_tenders WHERE ${whereConditions} AND ${archiveWhere})`);
+        countParts.push(`(SELECT COUNT(*) FROM archived_tenders WHERE ${whereConditions} ${archiveWhere !== '1=1' ? ' AND ' + archiveWhere : ''})`);
         countParams.push(...params, ...archiveValues);
     }
 
-    if (includeGem && !year) { // If year is provided, we only want historical/archive data
+    if (includeGem) { // Removed !year - we search all tables even for past years
         queryParts.push(`SELECT ${commonColumns}, 'GEM' as source_table FROM gem_tenders WHERE ${whereConditions}`);
         queryValues.push(...params);
         countParts.push(`(SELECT COUNT(*) FROM gem_tenders WHERE ${whereConditions})`);
         countParams.push(...params);
     }
 
-    if (includeEproc && !year) {
+    if (includeEproc) {
         queryParts.push(`SELECT ${commonColumns}, 'eProcurement' as source_table FROM eprocurement_tenders WHERE ${whereConditions}`);
         queryValues.push(...params);
         countParts.push(`(SELECT COUNT(*) FROM eprocurement_tenders WHERE ${whereConditions})`);
         countParams.push(...params);
     }
 
-    if (includeIreps && !year) {
+    if (includeIreps) {
         queryParts.push(`SELECT ${commonColumns}, 'iREPS' as source_table FROM ireps_tenders WHERE ${whereConditions}`);
         queryValues.push(...params);
         countParts.push(`(SELECT COUNT(*) FROM ireps_tenders WHERE ${whereConditions})`);
         countParams.push(...params);
     }
 
-    if (includeGlobal && !year) {
+    if (includeGlobal) {
         // Global where conditions (similar but uses country instead of state_name)
         let globalWhere = '1=1';
         const globalParams = [];
 
         if (include_expired !== 'true' && status !== 'archive') {
             globalWhere += ` AND (
-                CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                    ELSE NULL
-                END >= CURDATE()
+                ${dateExpr} >= CURDATE()
                 OR closing_date IS NULL OR closing_date = '' OR closing_date = 'N/A'
             )`;
         } else if (status === 'archive' || status === 'closed') {
+            globalWhere += ` AND ${dateExpr} < CURDATE() `;
+            if (!year) {
+                globalWhere += ` AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 20 DAY) `;
+            }
+            globalWhere += ` AND closing_date IS NOT NULL AND closing_date != '' AND closing_date != 'N/A' `;
+        }
+
+        if (year) {
             globalWhere += ` AND (
                 CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                    ELSE NULL
-                END < CURDATE()
-                AND
-                CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
-                    ELSE NULL
-                END >= DATE_SUB(CURDATE(), INTERVAL 20 DAY)
-                AND closing_date IS NOT NULL AND closing_date != '' AND closing_date != 'N/A'
+                    WHEN closing_date REGEXP '^[0-9]{4}[-/]' THEN LEFT(closing_date, 4) = ?
+                    WHEN closing_date REGEXP '[-/][0-9]{4}' THEN RIGHT(LEFT(closing_date, 10), 4) = ?
+                    ELSE FALSE
+                END
             )`;
+            globalParams.push(year, year);
         }
 
         if (country) {
@@ -1629,8 +1618,8 @@ app.get('/api/tenders/archive-years', async (req, res) => {
         const query = `
             SELECT DISTINCT
                 CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN LEFT(closing_date, 4)
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN RIGHT(LEFT(closing_date, 10), 4)
+                    WHEN closing_date REGEXP '^[0-9]{4}[-/]' THEN LEFT(closing_date, 4)
+                    WHEN closing_date REGEXP '[-/][0-9]{4}' THEN RIGHT(LEFT(closing_date, 10), 4)
                     ELSE NULL
                 END as year
             FROM (
@@ -1647,8 +1636,8 @@ app.get('/api/tenders/archive-years', async (req, res) => {
             WHERE closing_date IS NOT NULL AND closing_date != ''
             AND (
                 CASE 
-                    WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
-                    WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
+                    WHEN closing_date REGEXP '^[0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2}' THEN STR_TO_DATE(REPLACE(LEFT(closing_date, 10), '/', '-'), '%Y-%m-%d')
+                    WHEN closing_date REGEXP '^[0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{4}' THEN STR_TO_DATE(REPLACE(LEFT(closing_date, 10), '/', '-'), '%d-%m-%Y')
                     ELSE NULL
                 END < CURDATE()
             )
@@ -1684,20 +1673,20 @@ app.post('/api/admin/archive-now', async (req, res) => {
 app.get('/api/tenders/stats', async (req, res) => {
     try {
         const activeFilter = `(
-            CASE 
+                CASE 
                 WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
                 WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
                 ELSE NULL
             END >= CURDATE()
             OR closing_date IS NULL OR closing_date = '' OR closing_date = 'N/A'
-        )`;
+            )`;
 
         // Execute all stat counts in parallel
         const [gemResult, eprocResult, irepsResult, globalResult] = await Promise.all([
-            pool.query(`SELECT COUNT(*) as count FROM gem_tenders WHERE ${activeFilter}`),
-            pool.query(`SELECT COUNT(*) as count FROM eprocurement_tenders WHERE ${activeFilter}`),
-            pool.query(`SELECT COUNT(*) as count FROM ireps_tenders WHERE ${activeFilter}`),
-            pool.query(`SELECT COUNT(*) as count FROM temp_tenders_global WHERE ${activeFilter}`)
+            pool.query(`SELECT COUNT(*) as count FROM gem_tenders WHERE ${activeFilter} `),
+            pool.query(`SELECT COUNT(*) as count FROM eprocurement_tenders WHERE ${activeFilter} `),
+            pool.query(`SELECT COUNT(*) as count FROM ireps_tenders WHERE ${activeFilter} `),
+            pool.query(`SELECT COUNT(*) as count FROM temp_tenders_global WHERE ${activeFilter} `)
         ]);
 
         const gemCount = gemResult[0];
@@ -1727,16 +1716,16 @@ app.get('/api/tenders/stats', async (req, res) => {
 app.get('/api/tenders/state-stats', async (req, res) => {
     try {
         const activeFilter = `(
-            CASE 
+                CASE 
                 WHEN closing_date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%Y-%m-%d')
                 WHEN closing_date REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(closing_date, 10), '%d-%m-%Y')
                 ELSE NULL
             END >= CURDATE()
             OR closing_date IS NULL OR closing_date = '' OR closing_date = 'N/A'
-        )`;
+            )`;
 
         const query = `
-            SELECT state_name as state, SUM(cnt) as count FROM (
+            SELECT state_name as state, SUM(cnt) as count FROM(
                 SELECT state_name, COUNT(*) as cnt FROM gem_tenders WHERE state_name IS NOT NULL AND state_name != '' AND ${activeFilter} GROUP BY state_name
                 UNION ALL
                 SELECT state_name, COUNT(*) as cnt FROM eprocurement_tenders WHERE state_name IS NOT NULL AND state_name != '' AND ${activeFilter} GROUP BY state_name
@@ -1817,7 +1806,7 @@ app.post('/api/bidgpt', async (req, res) => {
             }
         } catch (ctxErr) { console.error('Context fetch error:', ctxErr.message); }
 
-        console.log(`🧠 BidGPT Processing: "${query}" (Language: ${language || 'English'})`);
+        console.log(`🧠 BidGPT Processing: "${query}"(Language: ${language || 'English'})`);
 
         // 1. NLP Processing with Context
         const aiResponse = await processBidGPTQuery(query, language, context);
@@ -1856,7 +1845,7 @@ app.post('/api/bidgpt', async (req, res) => {
         Object.entries(filters).forEach(([key, value]) => {
             if (value) queryParams.append(key, value);
         });
-        const redirectUrl = `/tenders?${queryParams.toString()}`;
+        const redirectUrl = `/ tenders ? ${queryParams.toString()} `;
 
         // 4. Return Combined Response
         res.json({
@@ -1888,14 +1877,14 @@ app.post('/api/bidgpt', async (req, res) => {
                 const topicText = filters.q ? ` related to "${filters.q}"` : '';
 
                 if (count === 0) {
-                    if (isTelugu) return `క్షమించండి, మీ అభ్యర్థనకు సంబంధించి ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : 'ఎటువంటి టెండర్లు'} కనుగొనబడలేదు. దయచేసి మీ శోధనను మరిన్ని కీవర్డ్లతో క్లుప్తీకరించండి.`;
+                    if (isTelugu) return `క్షమించండి, మీ అభ్యర్థనకు సంబంధించి ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : 'ఎటువంటి టెండర్లు'} కనుగొనబడలేదు.దయచేసి మీ శోధనను మరిన్ని కీవర్డ్లతో క్లుప్తీకరించండి.`;
                     if (isHindi) return `क्षमा करें, हमें ${locationText ? locationText + ' में ' : ''}${topicText ? topicText : 'आपकी खोज'} के लिए कोई सक्रिय निविदाएं नहीं मिलीं। कृपया किसी अन्य क्षेत्र या कीवर्ड के साथ पुनः प्रयास करें।`;
-                    return `My apologies, but I could not find any active tender opportunities${topicText}${locationText ? ' within ' + locationText : ''} at this moment. Would you like to refine your query or explore a different region?`;
+                    return `My apologies, but I could not find any active tender opportunities${topicText}${locationText ? ' within ' + locationText : ''} at this moment.Would you like to refine your query or explore a different region ? `;
                 }
 
-                if (isTelugu) return `నేను ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : ''} మొత్తం ${count} క్రియాశీల టెండర్లను విజయవంతంగా గుర్తించాను. మీ సమీక్ష కోసం ఇక్కడ తాజా ఫలితాలు ఉన్నాయి:`;
-                if (isHindi) return `मैंने ${locationText ? locationText + ' में ' : ''}${topicText ? topicText : ''} कुल ${count} सक्रिय निविदाएं सफलतापूर्वक प्राप्त की हैं। आपके संदर्भ के लिए यहाँ महत्वपूर्ण परिणाम दिए गए हैं:`;
-                return `I have successfully identified ${count} active tender opportunit${count > 1 ? 'ies' : 'y'}${topicText}${locationText ? ' in ' + locationText : ''} tailored to your requirements. Here are the most relevant results:`;
+                if (isTelugu) return `నేను ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : ''} మొత్తం ${count} క్రియాశీల టెండర్లను విజయవంతంగా గుర్తించాను.మీ సమీక్ష కోసం ఇక్కడ తాజా ఫలితాలు ఉన్నాయి: `;
+                if (isHindi) return `मैंने ${locationText ? locationText + ' में ' : ''}${topicText ? topicText : ''} कुल ${count} सक्रिय निविदाएं सफलतापूर्वक प्राप्त की हैं। आपके संदर्भ के लिए यहाँ महत्वपूर्ण परिणाम दिए गए हैं: `;
+                return `I have successfully identified ${count} active tender opportunit${count > 1 ? 'ies' : 'y'}${topicText}${locationText ? ' in ' + locationText : ''} tailored to your requirements.Here are the most relevant results: `;
             })()
         });
 
@@ -1914,52 +1903,52 @@ app.get('/api/global-tenders', async (req, res) => {
         const offset = (safePage - 1) * safeLimit;
 
         let query = `
-            SELECT 
-                tender_id as id,
-                name_of_work as title,
-                tender_dept as authority,
-                country,
-                city,
-                tender_category as category,
-                tender_ecv as estimated_value,
-                tender_emd,
-                currency,
-                closing_date as deadline,
-                created_at,
-                'active' as status,
-                source_site,
-                globaldoclink as doc_link FROM temp_tenders_global 
+SELECT
+tender_id as id,
+    name_of_work as title,
+    tender_dept as authority,
+    country,
+    city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd,
+    currency,
+    closing_date as deadline,
+    created_at,
+    'active' as status,
+    source_site,
+    globaldoclink as doc_link FROM temp_tenders_global 
             WHERE tender_id IS NOT NULL AND tender_id != ''
-        `;
+    `;
         const params = [];
 
         if (country) {
             const countryList = country.split(',').map(c => c.trim()).filter(c => c.length > 0);
             if (countryList.length > 0) {
                 let countryConditions = countryList.map(() => 'country LIKE ?');
-                query += ` AND (${countryConditions.join(' OR ')})`;
-                countryList.forEach(c => params.push(`%${c}%`));
+                query += ` AND(${countryConditions.join(' OR ')})`;
+                countryList.forEach(c => params.push(`% ${c}% `));
             }
         }
 
         if (city) {
             query += ' AND city LIKE ?';
-            params.push(`%${city}%`);
+            params.push(`% ${city}% `);
         }
 
         if (authority) {
             query += ' AND tender_dept LIKE ?';
-            params.push(`%${authority}%`);
+            params.push(`% ${authority}% `);
         }
 
         if (category) {
             query += ' AND tender_category LIKE ?';
-            params.push(`%${category}%`);
+            params.push(`% ${category}% `);
         }
 
         if (source) {
             query += ' AND source_site LIKE ?';
-            params.push(`%${source}%`);
+            params.push(`% ${source}% `);
         }
 
         if (q) {
@@ -1972,34 +1961,34 @@ app.get('/api/global-tenders', async (req, res) => {
                         let innerConditions = [];
                         terms.forEach(term => {
                             innerConditions.push('(name_of_work LIKE ? OR tender_id LIKE ? OR tender_dept LIKE ?)');
-                            const wordMatch = `%${term}%`;
+                            const wordMatch = `% ${term}% `;
                             params.push(wordMatch, wordMatch, wordMatch);
                         });
                         qConditions.push(`(${innerConditions.join(' AND ')})`);
                     }
                 });
                 if (qConditions.length > 0) {
-                    query += ` AND (${qConditions.join(' OR ')})`;
+                    query += ` AND(${qConditions.join(' OR ')})`;
                 }
             }
         }
 
         // Count total
-        let countQuery = `SELECT COUNT(*) as total FROM temp_tenders_global WHERE 1=1`;
+        let countQuery = `SELECT COUNT(*) as total FROM temp_tenders_global WHERE 1 = 1`;
         const countParams = [];
 
         if (country) {
             const countryList = country.split(',').map(c => c.trim()).filter(c => c.length > 0);
             if (countryList.length > 0) {
                 let countryConditions = countryList.map(() => 'country LIKE ?');
-                countQuery += ` AND (${countryConditions.join(' OR ')})`;
-                countryList.forEach(c => countParams.push(`%${c}%`));
+                countQuery += ` AND(${countryConditions.join(' OR ')})`;
+                countryList.forEach(c => countParams.push(`% ${c}% `));
             }
         }
-        if (city) { countQuery += ' AND city LIKE ?'; countParams.push(`%${city}%`); }
-        if (authority) { countQuery += ' AND tender_dept LIKE ?'; countParams.push(`%${authority}%`); }
-        if (category) { countQuery += ' AND tender_category LIKE ?'; countParams.push(`%${category}%`); }
-        if (source) { countQuery += ' AND source_site LIKE ?'; countParams.push(`%${source}%`); }
+        if (city) { countQuery += ' AND city LIKE ?'; countParams.push(`% ${city}% `); }
+        if (authority) { countQuery += ' AND tender_dept LIKE ?'; countParams.push(`% ${authority}% `); }
+        if (category) { countQuery += ' AND tender_category LIKE ?'; countParams.push(`% ${category}% `); }
+        if (source) { countQuery += ' AND source_site LIKE ?'; countParams.push(`% ${source}% `); }
         if (q) {
             const keywords = q.split(',').map(k => k.trim()).filter(k => k.length > 0);
             if (keywords.length > 0) {
@@ -2010,14 +1999,14 @@ app.get('/api/global-tenders', async (req, res) => {
                         let innerConditions = [];
                         terms.forEach(term => {
                             innerConditions.push('(name_of_work LIKE ? OR tender_id LIKE ? OR tender_dept LIKE ?)');
-                            const wordMatch = `%${term}%`;
+                            const wordMatch = `% ${term}% `;
                             countParams.push(wordMatch, wordMatch, wordMatch);
                         });
                         qConditions.push(`(${innerConditions.join(' AND ')})`);
                     }
                 });
                 if (qConditions.length > 0) {
-                    countQuery += ` AND (${qConditions.join(' OR ')})`;
+                    countQuery += ` AND(${qConditions.join(' OR ')})`;
                 }
             }
         }
@@ -2035,12 +2024,12 @@ app.get('/api/global-tenders', async (req, res) => {
             // "Closing Soon" means we want ASCENDING order (nearest future date first)
             // But we must PUSH invalid dates or past dates to the BOTTOM.
             orderBy = `
-                CASE 
+CASE 
                     WHEN deadline REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' AND STR_TO_DATE(LEFT(deadline, 10), '%Y-%m-%d') >= CURDATE() THEN 0
                     WHEN deadline REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' AND STR_TO_DATE(LEFT(deadline, 10), '%d-%m-%Y') >= CURDATE() THEN 0
                     ELSE 1 
                 END ASC,
-                CASE 
+    CASE 
                     WHEN deadline REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN STR_TO_DATE(LEFT(deadline, 10), '%Y-%m-%d')
                     WHEN deadline REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{4}' THEN STR_TO_DATE(LEFT(deadline, 10), '%d-%m-%Y')
                     ELSE '2999-12-31'
@@ -2048,13 +2037,13 @@ app.get('/api/global-tenders', async (req, res) => {
             `;
         } else if (sortField === 'estimated_value' || sortField === 'tender_ecv') {
             // "Value" defaults to DESCENDING (highest value first)
-            orderBy = `CAST(REGEXP_REPLACE(tender_ecv, '[^0-9.]', '') AS DECIMAL(20,2)) DESC`;
+            orderBy = `CAST(REGEXP_REPLACE(tender_ecv, '[^0-9.]', '') AS DECIMAL(20, 2)) DESC`;
         } else {
             // Default
             orderBy = `created_at DESC`;
         }
 
-        query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
+        query += ` ORDER BY ${orderBy} LIMIT ? OFFSET ? `;
         params.push(safeLimit, offset);
 
         const [tenders] = await pool.query(query, params);
@@ -2090,23 +2079,23 @@ app.get('/api/global-tender-details', async (req, res) => {
         }
 
         const [tenders] = await pool.query(
-            `SELECT 
-                tender_id as id,
-                name_of_work as title,
-                name_of_work as description,
-                tender_dept as authority,
-                country,
-                city,
-                tender_category as category,
-                tender_ecv as estimated_value,
-                tender_emd,
-                currency,
-                closing_date as deadline,
-                created_at,
-                'active' as status,
-                source_site,
-                globaldoclink as doc_link FROM temp_tenders_global 
-            WHERE tender_id = ?`,
+            `SELECT
+tender_id as id,
+    name_of_work as title,
+    name_of_work as description,
+    tender_dept as authority,
+    country,
+    city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd,
+    currency,
+    closing_date as deadline,
+    created_at,
+    'active' as status,
+    source_site,
+    globaldoclink as doc_link FROM temp_tenders_global 
+            WHERE tender_id = ? `,
             [id]
         );
 
@@ -2146,89 +2135,89 @@ app.get('/api/tenders/:id', async (req, res) => {
         }
 
         const query = `
-            SELECT * FROM (
-                SELECT 
+SELECT * FROM(
+    SELECT 
                     tender_id as id,
-                    tender_id as reference_number,
-                    name_of_work as title,
-                    name_of_work as description,
-                    tender_dept as authority,
-                    state_name as state,
-                    location as city,
-                    tender_category as category,
-                    tender_ecv as estimated_value,
-                    tender_emd as emd_value,
-                    closing_date as deadline,
-                    'active' as status,
-                    source_site,
-                    gemdoclink,
-                    doclinks,
-                    created_at,
-                    'GEM' as source_table
+    tender_id as reference_number,
+    name_of_work as title,
+    name_of_work as description,
+    tender_dept as authority,
+    state_name as state,
+    location as city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd as emd_value,
+    closing_date as deadline,
+    'active' as status,
+    source_site,
+    gemdoclink,
+    doclinks,
+    created_at,
+    'GEM' as source_table
                 FROM gem_tenders
                 UNION ALL
                 SELECT 
                     tender_id as id,
-                    tender_id as reference_number,
-                    name_of_work as title,
-                    name_of_work as description,
-                    tender_dept as authority,
-                    state_name as state,
-                    location as city,
-                    tender_category as category,
-                    tender_ecv as estimated_value,
-                    tender_emd as emd_value,
-                    closing_date as deadline,
-                    'active' as status,
-                    source_site,
-                    gemdoclink,
-                    doclinks,
-                    created_at,
-                    'eProcurement' as source_table
+    tender_id as reference_number,
+    name_of_work as title,
+    name_of_work as description,
+    tender_dept as authority,
+    state_name as state,
+    location as city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd as emd_value,
+    closing_date as deadline,
+    'active' as status,
+    source_site,
+    gemdoclink,
+    doclinks,
+    created_at,
+    'eProcurement' as source_table
                 FROM eprocurement_tenders
                 UNION ALL
                 SELECT 
                     tender_id as id,
-                    tender_id as reference_number,
-                    name_of_work as title,
-                    name_of_work as description,
-                    tender_dept as authority,
-                    state_name as state,
-                    location as city,
-                    tender_category as category,
-                    tender_ecv as estimated_value,
-                    tender_emd as emd_value,
-                    closing_date as deadline,
-                    'active' as status,
-                    source_site,
-                    gemdoclink,
-                    doclinks,
-                    created_at,
-                    'iREPS' as source_table
+    tender_id as reference_number,
+    name_of_work as title,
+    name_of_work as description,
+    tender_dept as authority,
+    state_name as state,
+    location as city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd as emd_value,
+    closing_date as deadline,
+    'active' as status,
+    source_site,
+    gemdoclink,
+    doclinks,
+    created_at,
+    'iREPS' as source_table
                 FROM ireps_tenders
                 UNION ALL
                 SELECT 
                     tender_id as id,
-                    tender_id as reference_number,
-                    name_of_work as title,
-                    name_of_work as description,
-                    tender_dept as authority,
-                    country as state,
-                    city as city,
-                    tender_category as category,
-                    tender_ecv as estimated_value,
-                    tender_emd as emd_value,
-                    closing_date as deadline,
-                    'active' as status,
-                    source_site,
-                    NULL as gemdoclink,
-                    globaldoclink as doclinks,
-                    created_at,
-                    'Global' as source_table
+    tender_id as reference_number,
+    name_of_work as title,
+    name_of_work as description,
+    tender_dept as authority,
+    country as state,
+    city as city,
+    tender_category as category,
+    tender_ecv as estimated_value,
+    tender_emd as emd_value,
+    closing_date as deadline,
+    'active' as status,
+    source_site,
+    NULL as gemdoclink,
+    globaldoclink as doclinks,
+    created_at,
+    'Global' as source_table
                 FROM temp_tenders_global
-            ) as all_tenders
+) as all_tenders
             WHERE id = ?
-            LIMIT 1
+    LIMIT 1
         `;
 
         const [tenders] = await pool.query(query, [tenderId]);
@@ -2273,19 +2262,19 @@ app.post('/api/tenders', async (req, res) => {
 
         // Use last 8 digits of timestamp for a numeric suffix
         const numericSuffix = Date.now().toString().slice(-8);
-        const tenderId = `${prefix}${numericSuffix}`;
+        const tenderId = `${prefix}${numericSuffix} `;
 
         // Use correct column names based on table structure
         let queryStr = '';
         let queryParams = [];
 
         if (source_table === 'Global') {
-            queryStr = `INSERT INTO temp_tenders_global (tender_id, name_of_work, tender_dept, country, tender_category, tender_ecv, closing_date, source_site, globaldoclink, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+            queryStr = `INSERT INTO temp_tenders_global(tender_id, name_of_work, tender_dept, country, tender_category, tender_ecv, closing_date, source_site, globaldoclink, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
             queryParams = [tenderId, title, authority, state || '', category || '', estimated_value || 0, deadline, 'Manual', ''];
         } else {
-            queryStr = `INSERT INTO ?? (tender_id, name_of_work, tender_dept, state_name, tender_category, tender_ecv, closing_date, source_site, gemdoclink, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+            queryStr = `INSERT INTO ?? (tender_id, name_of_work, tender_dept, state_name, tender_category, tender_ecv, closing_date, source_site, gemdoclink, created_at)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
             queryParams = [tableName, tenderId, title, authority, state || '', category || '', estimated_value || 0, deadline, 'Manual', ''];
         }
 
@@ -2331,12 +2320,12 @@ app.put('/api/tenders/:id', async (req, res) => {
 
         if (source_table === 'Global') {
             await pool.query(
-                `UPDATE temp_tenders_global SET name_of_work = ?, tender_dept = ?, country = ?, tender_category = ?, tender_ecv = ?, closing_date = ? WHERE tender_id = ?`,
+                `UPDATE temp_tenders_global SET name_of_work = ?, tender_dept = ?, country = ?, tender_category = ?, tender_ecv = ?, closing_date = ? WHERE tender_id = ? `,
                 [title, authority, state, category, estimated_value, deadline, tenderId]
             );
         } else {
             await pool.query(
-                `UPDATE ?? SET name_of_work = ?, tender_dept = ?, state_name = ?, tender_category = ?, tender_ecv = ?, closing_date = ? WHERE tender_id = ?`,
+                `UPDATE ?? SET name_of_work = ?, tender_dept = ?, state_name = ?, tender_category = ?, tender_ecv = ?, closing_date = ? WHERE tender_id = ? `,
                 [tableName, title, authority, state, category, estimated_value, deadline, tenderId]
             );
         }
@@ -2376,7 +2365,7 @@ app.delete('/api/tenders/:id', async (req, res) => {
         else if (source_table === 'Global') tableName = 'temp_tenders_global';
         else return res.status(400).json({ message: 'Invalid source table' });
 
-        await pool.query(`DELETE FROM ?? WHERE tender_id = ?`, [tableName, tenderId]);
+        await pool.query(`DELETE FROM ?? WHERE tender_id = ? `, [tableName, tenderId]);
 
         res.json({ message: 'Tender deleted successfully' });
     } catch (error) {
@@ -2398,7 +2387,7 @@ app.post('/api/analyze-tender', upload.single('document'), async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        console.log(`🔍 [Node Server] Sending file to Python BidAnalyzer for high-fidelity analysis: ${req.file.filename}`);
+        console.log(`🔍[Node Server] Sending file to Python BidAnalyzer for high - fidelity analysis: ${req.file.filename} `);
 
         // Prepare FormData for Python backend (Port 8000)
         const pythonFormData = new FormData();
@@ -2458,12 +2447,12 @@ app.post('/api/analyze-tender', upload.single('document'), async (req, res) => {
 const initMappingTable = async () => {
     try {
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS portal_mappings (
-                portal VARCHAR(50) PRIMARY KEY,
-                mapping JSON,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        `);
+            CREATE TABLE IF NOT EXISTS portal_mappings(
+    portal VARCHAR(50) PRIMARY KEY,
+    mapping JSON,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)
+    `);
     } catch (err) {
         console.error('Failed to init portal_mappings table:', err.message);
     }
@@ -2472,19 +2461,19 @@ const initMappingTable = async () => {
 const initBlogTable = async () => {
     try {
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS blog_posts (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                excerpt TEXT,
-                content LONGTEXT,
-                category VARCHAR(100),
-                author VARCHAR(100) DEFAULT 'Admin',
-                image_url VARCHAR(500),
-                status VARCHAR(50) DEFAULT 'published',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        `);
+            CREATE TABLE IF NOT EXISTS blog_posts(
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        excerpt TEXT,
+        content LONGTEXT,
+        category VARCHAR(100),
+        author VARCHAR(100) DEFAULT 'Admin',
+        image_url VARCHAR(500),
+        status VARCHAR(50) DEFAULT 'published',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+    `);
         console.log('✅ Blog posts table initialized');
     } catch (err) {
         console.error('Failed to init blog_posts table:', err.message);
@@ -2517,14 +2506,14 @@ migrateUserRequests();
 const migrateBidGPTContext = async () => {
     try {
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS bidgpt_context (
-                session_id VARCHAR(255) PRIMARY KEY,
-                last_filters JSON,
-                last_intent VARCHAR(100),
-                last_query TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        `);
+            CREATE TABLE IF NOT EXISTS bidgpt_context(
+        session_id VARCHAR(255) PRIMARY KEY,
+        last_filters JSON,
+        last_intent VARCHAR(100),
+        last_query TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+    `);
         console.log('✅ BidGPT context table initialized');
     } catch (migErr) {
         console.error('Migration error (bidgpt_context):', migErr.message);
@@ -2550,16 +2539,16 @@ migrateUsers();
 const initDocumentsTable = async () => {
     try {
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS documents (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                department VARCHAR(255),
-                file_path VARCHAR(500) NOT NULL,
-                file_type VARCHAR(50),
-                size_bytes INT,
-                uploaded_by VARCHAR(100),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            CREATE TABLE IF NOT EXISTS documents(
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        department VARCHAR(255),
+        file_path VARCHAR(500) NOT NULL,
+        file_type VARCHAR(50),
+        size_bytes INT,
+        uploaded_by VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
         `);
 
         // Add department column if NOT exists (migration for existing tables)
@@ -2592,12 +2581,12 @@ app.post('/api/admin/analyze-structure', upload.single('file'), async (req, res)
         else if (portal === 'ireps') targetTable = 'ireps_tenders';
         else if (portal === 'global') targetTable = 'temp_tenders_global';
 
-        const [columns] = await pool.query(`DESCRIBE ${targetTable}`);
+        const [columns] = await pool.query(`DESCRIBE ${targetTable} `);
         const dbColumns = columns
             .map(c => c.Field)
             .filter(f => !['id', 'created_at', 'updated_at', 'bidalert_user'].includes(f));
 
-        console.log(`🧠 AI Smart Mapper fetching columns for ${targetTable}:`, dbColumns);
+        console.log(`🧠 AI Smart Mapper fetching columns for ${targetTable}: `, dbColumns);
 
         // Analyze with AI using the ACTUAL columns from the database
         const mapping = await analyzeStructure(sampleText, portal, dbColumns);
@@ -2652,7 +2641,7 @@ app.post('/api/ask-tender', async (req, res) => {
             return res.status(400).json({ message: 'Question is required' });
         }
 
-        console.log(`💬 [Node Server] Proxying Q&A to Python: "${question.substring(0, 50)}..."`);
+        console.log(`💬[Node Server] Proxying Q & A to Python: "${question.substring(0, 50)}..."`);
 
         const response = await axios.post('http://localhost:8000/api/ask', {
             question,
