@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, Search, Calendar, MapPin, Building, Globe, Facebook, Instagram, Linkedin, MessageCircle, FileText, ChevronRight, X, ChevronDown, Save, ArrowRight } from 'lucide-react';
-import { countries, categories } from '@/data/filterOptions';
+import { countries, categories, sectors } from '@/data/filterOptions';
 
 // Global Sources
 const sources = [
@@ -348,6 +348,19 @@ function GlobalTendersContent() {
                                     >
                                         <option value="">All Categories</option>
                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Sector Select */}
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Sector / Industry</label>
+                                    <select
+                                        id="filter-sector"
+                                        name="sector" value={(filters as any).sector || ''} onChange={handleFilterChange}
+                                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:border-bid-green focus:shadow-[0_0_0_4px_rgba(16,185,129,0.15)] transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">All Sectors</option>
+                                        {sectors.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
 

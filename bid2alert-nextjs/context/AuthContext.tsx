@@ -41,6 +41,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [mounted, setMounted] = useState(false);
     const router = useRouter();
 
+    const refreshUser = useCallback(async () => {
+        const storedToken = localStorage.getItem('token');
+        if (!storedToken) return;
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${storedToken}` }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                setUser(userData);
+                localStorage.setItem('user', JSON.stringify(userData));
+            }
+        } catch (error) {
+            console.error('Failed to refresh user data:', error);
+        }
+    }, []);
+
+    // Periodic Refresh to catch subscription expirations or upgrades (Global)
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (token) {
+            refreshUser();
+            interval = setInterval(refreshUser, 10000); // Global refresh every 10 seconds
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [token, refreshUser]);
+
     useEffect(() => {
         setMounted(true);
         const storedToken = localStorage.getItem('token');
@@ -105,26 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const closeAuthModal = useCallback(() => {
         setIsAuthModalOpen(false);
-    }, []);
-
-    const refreshUser = useCallback(async () => {
-        const storedToken = localStorage.getItem('token');
-        if (!storedToken) return;
-
-        try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/auth/profile`, {
-                headers: { 'Authorization': `Bearer ${storedToken}` }
-            });
-
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
-            }
-        } catch (error) {
-            console.error('Failed to refresh user data:', error);
-        }
     }, []);
 
     return (

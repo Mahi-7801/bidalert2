@@ -10,13 +10,14 @@ import {
     ArrowRight, Globe, Layers, Map as MapIcon,
     ChevronRight, Facebook, Instagram, Linkedin, MessageCircle, FileText
 } from 'lucide-react';
-import { states, ministries, departments, cities, categories, tenderKeywords } from '@/data/filterOptions';
-import { ChevronDown, Save, X } from 'lucide-react';
+import { states, ministries, departments, cities, categories, sectors, tenderKeywords } from '@/data/filterOptions';
+import { ChevronDown, Save, X, Briefcase } from 'lucide-react';
 
 // Deduplicate filter arrays to prevent React duplicate-key warnings
 const uniqueMinistries = [...new Set(ministries)];
 const uniqueDepartments = [...new Set(departments)];
 const uniqueCategories = [...new Set(categories)];
+const uniqueSectors = [...new Set(sectors)];
 const uniqueStates = [...new Set(states)];
 const uniqueCities = [...new Set(cities)];
 
@@ -455,6 +456,18 @@ function TendersContent() {
                                     >
                                         <option value="">All Categories</option>
                                         {uniqueCategories.map((c, i) => <option key={`cat-${i}`} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Sector Select */}
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Sector / Industry</label>
+                                    <select
+                                        name="sector" value={filters.sector} onChange={handleFilterChange}
+                                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:border-bid-green transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">All Sectors</option>
+                                        {uniqueSectors.map((s, i) => <option key={`sector-${i}`} value={s}>{s}</option>)}
                                     </select>
                                 </div>
 

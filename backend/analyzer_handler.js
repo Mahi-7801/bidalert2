@@ -38,7 +38,7 @@ function getNextGeminiKey() {
 // Initial instance
 let genAI = new GoogleGenerativeAI(getNextGeminiKey() || "DUMMY");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const AI_MODEL = "gemini-2.5-flash"; 
+const AI_MODEL = "gemini-2.5-flash";
 
 // Helper for delays
 async function retryWithBackoff(fn, retries = 3, delay = 5000) {
@@ -367,14 +367,14 @@ async function extractWithAI(text, regexData, filePath) {
     }
 `;
 
-    const currentKey = getNextGeminiKey();
-    const currentGenAI = new GoogleGenerativeAI(currentKey);
-    const model = currentGenAI.getGenerativeModel({
-        model: AI_MODEL,
-        generationConfig: { responseMimeType: "application/json" } 
-    });
+        const currentKey = getNextGeminiKey();
+        const currentGenAI = new GoogleGenerativeAI(currentKey);
+        const model = currentGenAI.getGenerativeModel({
+            model: AI_MODEL,
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
-    for (let i = 0; i < chunks.length; i++) {
+        for (let i = 0; i < chunks.length; i++) {
             console.log(`   -> Processing Segment ${i + 1}/${chunks.length}...`);
 
             // Rate Limit Buffer: Sleep 2s between chunks by default
@@ -965,19 +965,37 @@ async function processBidGPTQuery(userQuery, targetLanguage = 'English', context
     }
 }
 
-// Helper to extract filters using AI
+// Helper to extract filters using AI with robust fallback
 async function extractSearchFilters(userQuery) {
+    const qRaw = userQuery.toLowerCase().trim();
+
+    // Explicitly handle "Nicobar" and common UTs/Islands that AI might miss as "state"
+    const locationMapping = {
+        "nicobar": "Andaman & Nicobar Islands",
+        "andaman": "Andaman & Nicobar Islands",
+        "lakshadweep": "Lakshadweep",
+        "daman": "Daman & Diu",
+        "haveli": "Dadra & Nagar Haveli",
+        "ladakh": "Ladakh"
+    };
+
     const filterPrompt = `
-        You are a Tender Search Engine.
+        You are an expert Indian Government Tender Search Engine.
         Convert the USER QUERY into a JSON object of search filters.
         
         FILTERS:
-        - q: Key product/service words (e.g., "CCTV", "Manpower"). Remove words like "tender", "wanted".
-        - state: Full state name if mentioned (e.g., "Maharashtra").
-        - city: City name if mentioned.
-        - category: Broad category if applicable.
+        - q: Key product, service, or specific location keyword. Keep meaningful words here.
+        - state: Full State or Union Territory name (e.g., "Maharashtra", "Andaman & Nicobar Islands").
+        - city: District or City name (e.g., "Nicobar", "Mumbai").
+        - category: Broad category if specified.
 
-        Example: "CCTV camera installation in Delhi" -> { "q": "CCTV camera installation", "state": "Delhi" }
+        RULES:
+        1. If the user mentions a location (like "Nicobar"), put it in "city" or "state" if sure, otherwise keep it in "q".
+        2. NEVER discard meaningful nouns from the query.
+        3. Remove noise like "tender", "i want", "searching for", "show me".
+        
+        Example: "state tender NICOBAR" -> { "q": "NICOBAR", "city": "Nicobar" }
+        Example: "CCTV in Mumbai" -> { "q": "CCTV", "city": "Mumbai" }
         
         Return ONLY valid JSON.
     `;
@@ -993,11 +1011,28 @@ async function extractSearchFilters(userQuery) {
             response_format: { type: 'json_object' }
         });
         const text = chatCompletion.choices[0].message.content;
-        return { type: 'search', filters: JSON.parse(text) };
+        let result = JSON.parse(text);
+
+        // Heuristic: If q is empty but userQuery was specific, or if state/city mapping needs help
+        if (result && !result.q && !result.state && !result.city) {
+            // Re-eval query to find nouns
+            const cleanTerms = qRaw.replace(/tender|tenders|i want|show|search|find|for|at|under/g, '').trim();
+            if (cleanTerms.length > 2) result.q = cleanTerms;
+        }
+
+        // Apply location mapping safety
+        Object.keys(locationMapping).forEach(key => {
+            if (qRaw.includes(key) && !result.state && !result.city) {
+                result.city = key;
+            }
+        });
+
+        return { type: 'search', filters: result };
     } catch (e) {
         console.error("BidGPT Filter Extraction Error:", e);
-        // Fallback: simple text search
-        return { type: 'search', filters: { q: userQuery } };
+        // Fallback: cleaning noise manually
+        const smartQ = qRaw.replace(/tender|tenders|i want|show|the|at|in|find|search/g, '').trim();
+        return { type: 'search', filters: { q: smartQ || userQuery } };
     }
 }
 

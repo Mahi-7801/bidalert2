@@ -7,3 +7,6 @@
 [2026-03-13T09:18:13.567Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1
 [2026-03-13T09:18:23.257Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 3500
 [2026-03-13T09:18:58.158Z] ❌ Razorpay Order Creation Failed: Razorpay Connection Failed (Possible Network Issue or Invalid Keys) | User: 4 | Amount: 1
+[2026-04-06T06:56:03.301Z] ✅ Verification Request: Order order_Sa7DvawvBVbYfw, Payment pay_Sa7EZnaasrFbjj
+[2026-04-06T06:59:21.247Z] ✅ Verification Request: Order order_Sa7H3cdKy0d74b, Payment pay_Sa7I4CGUg5AUG3
+[2026-04-06T06:59:24.521Z] ✅ Receipt [pay_Sa7I4CGUg5AUG3] sent successfully to kornepati-mahi@github.com (and BCC support@bidalert.in). MsgID: <a918b5c6-562f-79dd-4039-43c8a338b529@bidalert.in>

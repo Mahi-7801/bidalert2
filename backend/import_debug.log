@@ -94,3 +94,25 @@
 2026-04-05T05:48:33.723Z START IMPORT - Table: temp_tenders_global, Rows: 41
 2026-04-05T05:48:33.726Z Detected Header Row
 2026-04-05T05:48:33.729Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","currency":"7","tender_ecv":"8","country":"9","location":"10","apply_mode":"11","source_site":"12","globaldoclink":"13","mfa":"14","closing_date":"15"}
+2026-04-06T05:40:17.258Z START IMPORT - Table: gem_tenders, Rows: 8984
+2026-04-06T05:40:17.264Z Detected Header Row
+2026-04-06T05:40:17.275Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","emd_exemption":"7","state_name":"9","location":"10","apply_mode":"11","source_site":"12","doclinks":"13","gemdoclink":"14","closing_date":"15"}
+2026-04-06T05:48:21.167Z START IMPORT - Table: gem_tenders, Rows: 8984
+2026-04-06T05:48:21.175Z Detected Header Row
+2026-04-06T05:48:21.181Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","emd_exemption":"7","state_name":"9","location":"10","apply_mode":"11","source_site":"12","doclinks":"13","gemdoclink":"14","closing_date":"15"}
+2026-04-06T05:48:54.060Z FINISHED - Success: 8983, Errors: 0
+2026-04-06T05:52:18.696Z START IMPORT - Table: gem_tenders, Rows: 8984
+2026-04-06T05:52:18.699Z Detected Header Row
+2026-04-06T05:52:18.706Z Mapping used: {"bidalert_user":"0","tender_id":"1","name_of_work":"2","tender_category":"3","tender_dept":"4","tender_qty":"5","tender_emd":"6","emd_exemption":"7","state_name":"9","location":"10","apply_mode":"11","source_site":"12","doclinks":"13","gemdoclink":"14","closing_date":"15"}
+2026-04-06T05:52:31.513Z FINISHED - Success: 8983, Errors: 0
+2026-04-06T05:58:43.382Z START IMPORT - Table: temp_tenders_global, Rows: 79
+2026-04-06T05:58:43.384Z Detected Header Row
+2026-04-06T05:58:43.387Z Mapping used: {"source_site":"9","name_of_work":"6","tender_category":"5","closing_date":"7","country":"8","tender_id":"2","tender_dept":"4","globaldoclink":"9"}
+2026-04-06T05:58:43.428Z FINISHED - Success: 78, Errors: 0
+2026-04-06T06:07:29.493Z START STREAMING IMPORT - Table: gem_tenders
+2026-04-06T06:07:35.581Z FINISHED - Success: 8983, Errors: 0, Total Read: 8984
+2026-04-06T06:11:40.754Z START STREAMING IMPORT - Table: gem_tenders
+2026-04-06T06:11:46.536Z FINISHED - Success: 8983, Errors: 0, Total Read: 8984
+2026-04-06T06:13:54.956Z DIAGNOSTIC: Physical Size: 6958392 bytes, Raw Line Count: 20729
+2026-04-06T06:13:54.961Z START STREAMING IMPORT - Table: gem_tenders
+2026-04-06T06:14:00.455Z FINISHED - Success: 8983, Errors: 0, Total Read: 8984

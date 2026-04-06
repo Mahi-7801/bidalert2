@@ -1151,6 +1151,7 @@ async function getTendersLogic(queryParams) {
 
     const params = [];
 
+    // State filtering (Region)
     if (state) {
         const stateList = state.split(',').map(s => s.trim()).filter(s => s.length > 0);
         if (stateList.length > 0) {
@@ -1164,13 +1165,11 @@ async function getTendersLogic(queryParams) {
         }
     }
 
-    // Sector and Category are often used interchangeably
+    // Sector and Category (Classification) - IMPROVED to search ALL relevant columns since tender_category is often empty
     if (category || sector) {
         const cat = category || sector;
-        const sanitizedCat = cat.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
-        const catRegex = `[[:<:]]${sanitizedCat}[[:>:]]`;
-        whereConditions += ' AND (tender_category REGEXP ? OR LOWER(tender_category) = LOWER(?))';
-        params.push(catRegex, cat);
+        whereConditions += ' AND (tender_category LIKE ? OR name_of_work LIKE ? OR tender_dept LIKE ?)';
+        params.push(`%${cat}%`, `%${cat}%`, `%${cat}%`);
     }
 
     if (source) {
@@ -1180,18 +1179,18 @@ async function getTendersLogic(queryParams) {
 
     // Ministry and Department are both usually in tender_dept
     if (ministry) {
-        whereConditions += ' AND (tender_dept LIKE ? OR tender_dept LIKE ?)';
-        params.push(`%${ministry}%`, ministry);
+        whereConditions += ' AND (tender_dept LIKE ? OR name_of_work LIKE ?)';
+        params.push(`%${ministry}%`, `%${ministry}%`);
     }
 
     if (department) {
-        whereConditions += ' AND (tender_dept LIKE ? OR tender_dept LIKE ?)';
-        params.push(`%${department}%`, department);
+        whereConditions += ' AND (tender_dept LIKE ? OR name_of_work LIKE ?)';
+        params.push(`%${department}%`, `%${department}%`);
     }
 
     if (authority) {
-        whereConditions += ' AND tender_dept LIKE ?';
-        params.push(`%${authority}%`);
+        whereConditions += ' AND (tender_dept LIKE ? OR name_of_work LIKE ?)';
+        params.push(`%${authority}%`, `%${authority}%`);
     }
 
     if (authority_group) {
@@ -1199,23 +1198,20 @@ async function getTendersLogic(queryParams) {
             whereConditions += ' AND (tender_dept LIKE ? OR tender_dept LIKE ?)';
             params.push('%Bank%', '%Rajanigandha%');
         } else {
-            whereConditions += ' AND tender_dept LIKE ?';
-            params.push(`%${authority_group}%`);
+            whereConditions += ' AND (tender_dept LIKE ? OR name_of_work LIKE ?)';
+            params.push(`%${authority_group}%`, `%${authority_group}%`);
         }
     }
 
     if (city) {
-        whereConditions += ' AND location LIKE ?';
-        params.push(`%${city}%`);
+        whereConditions += ' AND (location LIKE ? OR state_name LIKE ? OR tender_dept LIKE ?)';
+        params.push(`%${city}%`, `%${city}%`, `%${city}%`);
     }
 
     if (type) {
-        // If type is specifically mentioned as a phrase or keyword
-        // Use word boundary to ensure exact word matches and avoid matching 'TOR' inside 'SECTOR'
-        const sanitizedType = type.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&');
-        const typeRegex = `[[:<:]]${sanitizedType}[[:>:]]`;
-        whereConditions += ' AND (tender_category REGEXP ? OR name_of_work REGEXP ? OR tender_dept REGEXP ?)';
-        params.push(typeRegex, typeRegex, typeRegex);
+        // Broad search for tender type (Goods, Services, Works, etc.)
+        whereConditions += ' AND (tender_category LIKE ? OR name_of_work LIKE ? OR tender_dept LIKE ?)';
+        params.push(`%${type}%`, `%${type}%`, `%${type}%`);
     }
 
     // When browsing archive WITHOUT a specific year, only show recently expired (last 20 days)
@@ -1430,18 +1426,18 @@ async function getTendersLogic(queryParams) {
 
         if (category || sector) {
             const cat = category || sector;
-            globalWhere += ' AND (tender_category LIKE ? OR LOWER(tender_category) = LOWER(?))';
-            globalParams.push(`%${cat}%`, cat);
+            globalWhere += ' AND (tender_category LIKE ? OR name_of_work LIKE ? OR tender_dept LIKE ?)';
+            globalParams.push(`%${cat}%`, `%${cat}%`, `%${cat}%`);
         }
 
         if (authority) {
-            globalWhere += ' AND tender_dept LIKE ?';
-            globalParams.push(`%${authority}%`);
+            globalWhere += ' AND (tender_dept LIKE ? OR name_of_work LIKE ?)';
+            globalParams.push(`%${authority}%`, `%${authority}%`);
         }
 
         if (city) {
-            globalWhere += ' AND city LIKE ?';
-            globalParams.push(`%${city}%`);
+            globalWhere += ' AND (city LIKE ? OR name_of_work LIKE ?)';
+            globalParams.push(`%${city}%`, `%${city}%`);
         }
 
         if (type) {
@@ -1826,12 +1822,29 @@ app.post('/api/bidgpt', async (req, res) => {
             })),
             total: result.total,
             redirectUrl: redirectUrl,
-            message: aiResponse.message || (() => {
+            message: (() => {
                 const count = result.total;
-                if (!language || language.toLowerCase() === 'english') return `Found ${count} tenders matching your request.`;
-                if (language.toLowerCase() === 'telugu' || language === 'Telugu') return `మీ అభ్యర్థనకు సరిపోయే ${count} టెండర్లు కనుగొనబడ్డాయి.`;
-                if (language.toLowerCase() === 'hindi' || language === 'Hindi') return `आपकी खोज के लिए ${count} निविदाएं मिलीं।`;
-                return `Found ${count} tenders matching your request.`;
+                const isTelugu = language && language.toLowerCase() === 'telugu';
+                const isHindi = language && language.toLowerCase() === 'hindi';
+
+                let locationText = '';
+                if (filters.state || filters.city) {
+                    const locs = [];
+                    if (filters.city) locs.push(filters.city);
+                    if (filters.state) locs.push(filters.state);
+                    locationText = locs.join(', ');
+                }
+                const topicText = filters.q ? ` related to "${filters.q}"` : '';
+
+                if (count === 0) {
+                    if (isTelugu) return `క్షమించండి, మీ అభ్యర్థనకు సంబంధించి ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : 'ఎటువంటి టెండర్లు'} కనుగొనబడలేదు. దయచేసి మీ శోధనను మరిన్ని కీవర్డ్లతో క్లుప్తీకరించండి.`;
+                    if (isHindi) return `क्षमा करें, हमें ${locationText ? locationText + ' में ' : ''}${topicText ? topicText : 'आपकी खोज'} के लिए कोई सक्रिय निविदाएं नहीं मिलीं। कृपया किसी अन्य क्षेत्र या कीवर्ड के साथ पुनः प्रयास करें।`;
+                    return `My apologies, but I could not find any active tender opportunities${topicText}${locationText ? ' within ' + locationText : ''} at this moment. Would you like to refine your query or explore a different region?`;
+                }
+
+                if (isTelugu) return `నేను ${locationText ? locationText + ' లో ' : ''}${topicText ? topicText : ''} మొత్తం ${count} క్రియాశీల టెండర్లను విజయవంతంగా గుర్తించాను. మీ సమీక్ష కోసం ఇక్కడ తాజా ఫలితాలు ఉన్నాయి:`;
+                if (isHindi) return `मैंने ${locationText ? locationText + ' में ' : ''}${topicText ? topicText : ''} कुल ${count} सक्रिय निविदाएं सफलतापूर्वक प्राप्त की हैं। आपके संदर्भ के लिए यहाँ महत्वपूर्ण परिणाम दिए गए हैं:`;
+                return `I have successfully identified ${count} active tender opportunit${count > 1 ? 'ies' : 'y'}${topicText}${locationText ? ' in ' + locationText : ''} tailored to your requirements. Here are the most relevant results:`;
             })()
         });
 
@@ -2567,346 +2580,16 @@ app.post('/api/admin/save-mapping', async (req, res) => {
 app.post('/api/admin/import-csv', upload.single('file'), (req, res) => {
     console.log('🚀 POST /api/admin/import-csv - Request Received');
     if (!req.file) {
-        console.warn('⚠️ No file uploaded in import-csv');
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const { table, portal } = req.body;
+    const { table } = req.body;
     if (!table) {
         return res.status(400).json({ message: 'Target table is required' });
     }
 
-    const results = [];
-    let responseSent = false;
-
-    const stream = fs.createReadStream(req.file.path)
-        .pipe(csv({ headers: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'] }))
-        .on('data', (data) => results.push(data))
-        .on('error', (streamErr) => {
-            console.error('❌ CSV Stream Error:', streamErr.message);
-            if (!responseSent) {
-                responseSent = true;
-                try { fs.unlinkSync(req.file.path); } catch (e) { }
-                res.status(500).json({ message: 'Error reading CSV file: ' + streamErr.message });
-            }
-        })
-        .on('end', async () => {
-            const logFile = path.join(__dirname, 'import_debug.log');
-            const logMsg = (msg) => fs.appendFileSync(logFile, new Date().toISOString() + ' ' + msg + '\n');
-
-            console.log(`📥 Processing ${results.length} rows for table: ${table}`);
-            logMsg(`START IMPORT - Table: ${table}, Rows: ${results.length}`);
-
-            let columnMap = null;
-
-            // --- THE UNIVERSAL SMART MAPPER ---
-            const firstRow = results[0];
-            if (!firstRow) {
-                if (!responseSent) {
-                    responseSent = true;
-                    try { fs.unlinkSync(req.file.path); } catch (e) { }
-                    return res.status(400).json({ message: 'CSV file is empty' });
-                }
-                return;
-            }
-
-            const headerValues = Object.values(firstRow).map(v => String(v).toLowerCase().replace(/_/g, ' ').trim());
-            const isHeaderRow = headerValues.some(v =>
-                /\btender\s*id\b|\bbid\s*no\b|\bbid\s*number\b|\breference\b|\btender\s*no\b/.test(v) ||
-                /\btitle\b|\bwork\b|\bdescription\b|\bname\s*of\s*work\b/.test(v) ||
-                /\bclosing\b|\bdeadline\b|end.*date|\bsubmission\b|last.*date/.test(v) ||
-                /\bdept\b|\bauthority\b|\borganization\b|\bdepartment\b|\bministry\b/.test(v) ||
-                /\bcountry\b|\bcity\b|\blocation\b|\bstate\b/.test(v) ||
-                /\buser\b|\bbidalert\b/.test(v)
-            );
-
-            // Step 1: Handle Headered CSV
-            if (isHeaderRow) {
-                console.log(`📄 Header row detected. Mapping by keywords...`);
-                logMsg('Detected Header Row');
-                columnMap = {};
-                Object.entries(firstRow).forEach(([key, val]) => {
-                    const v = String(val).toLowerCase().replace(/_/g, ' ').trim();
-                    if (/\buser\b/.test(v)) columnMap.bidalert_user = key;
-                    else if (/\btender\s*id\b|\bbid\s*no\b|\bbid\s*number\b|\breference\b|\btender\s*no\b/.test(v)) columnMap.tender_id = key;
-                    else if (/\btitle\b|\bwork\b|\bdescription\b|\bname\s*of\s*work\b/.test(v)) columnMap.name_of_work = key;
-                    else if (/\bdept\b|\bauthority\b|\borganization\b|\bdepartment\b|\bministry\b/.test(v)) columnMap.tender_dept = key;
-                    else if (/\bcategory\b|\btype\b/.test(v)) columnMap.tender_category = key;
-                    else if (/\bqty\b|\bquantity\b/.test(v)) columnMap.tender_qty = key;
-                    else if (/\bemd\b/.test(v) && !/\bexemption\b/.test(v)) columnMap.tender_emd = key;
-                    else if (/\bexemption\b/.test(v)) columnMap.emd_exemption = key;
-                    else if (/\becv\b|estimated.*value|amount|bid.*value/.test(v)) columnMap.tender_ecv = key;
-                    else if (/\bstate\b/.test(v)) columnMap.state_name = key;
-                    else if (/\blocation\b|\bcity\b|\bdistrict\b/.test(v)) columnMap.location = key;
-                    else if (/\bcountry\b/.test(v)) columnMap.country = key;
-                    else if (/\bcurrency\b/.test(v)) columnMap.currency = key;
-                    else if (/\bmfa\b/.test(v)) columnMap.mfa = key;
-                    else if (/\bmode\b|\bapply\b/.test(v)) columnMap.apply_mode = key;
-                    else if (/\bsource\b|\bwebsite\b|\bportal\b/.test(v)) columnMap.source_site = key;
-                    else if (/\bgemdoc\b|gem.*link|globaldoc|attachment|website.*link|tender.*link|document.*url/.test(v)) {
-                        if (table === 'temp_tenders_global') columnMap.globaldoclink = key;
-                        else columnMap.gemdoclink = key;
-                    }
-                    else if (/\bdoclink\b|document.*link|\bcorrigendum\b/.test(v)) columnMap.doclinks = key;
-                    else if (/\bclosing\b|\bdeadline\b|end.*date|\bsubmission\b|last.*date/.test(v)) columnMap.closing_date = key;
-                });
-                results.shift(); // Remove header row
-            }
-
-            // Step 2: Guess mapping from Data (if no header or mapping incomplete)
-            if (!columnMap || !columnMap.tender_id || !columnMap.name_of_work) {
-                const isGuessed = !!columnMap;
-                if (!columnMap) columnMap = {};
-
-                const dataRow = results[0] || firstRow;
-                if (dataRow) {
-                    console.log(`🎲 ${isGuessed ? 'Refining' : 'Guessing'} mapping from data patterns...`);
-                    const dataEntries = Object.entries(dataRow);
-
-                    // Skip common numeric ID like "1" in first column if it looks like a serial number
-                    const firstVal = String(dataRow['0'] || '').trim();
-                    const skipFirst = /^\d+$/.test(firstVal) && firstVal.length < 4;
-
-                    // Look for Tender ID (alphanumeric, usually with specific prefixes or patterns)
-                    if (!columnMap.tender_id) {
-                        const idEntry = dataEntries.find(([k, v]) => {
-                            const s = String(v).trim();
-                            if (skipFirst && k === '0') return false;
-                            return /^[A-Z0-9][-A-Z0-9/._ ]{5,}$/i.test(s) && /[A-Z]/.test(s) && /[0-9]/.test(s);
-                        });
-                        if (idEntry) columnMap.tender_id = idEntry[0];
-                    }
-
-                    // Look for Date
-                    if (!columnMap.closing_date) {
-                        const dateEntry = dataEntries.find(([k, v]) => /\d{2}[-/]\d{2}[-/]\d{4}|\d{4}[-/]\d{2}[-/]\d{2}/.test(String(v)));
-                        if (dateEntry) columnMap.closing_date = dateEntry[0];
-                    }
-
-                    // Look for Authority/Dept
-                    if (!columnMap.tender_dept) {
-                        const deptEntry = dataEntries.find(([k, v]) => /ministry|department|authority|railway|corporation|limited|gem|ireps|eproc|government/i.test(String(v).toLowerCase()));
-                        if (deptEntry) columnMap.tender_dept = deptEntry[0];
-                    }
-
-                    // Look for Name of Work (Longest text that isn't already assigned)
-                    if (!columnMap.name_of_work) {
-                        let longest = { key: null, len: 0 };
-                        dataEntries.forEach(([k, v]) => {
-                            const s = String(v).trim();
-                            if (s.length > longest.len && k !== columnMap.tender_id && k !== columnMap.tender_dept && k !== columnMap.closing_date) {
-                                longest = { key: k, len: s.length };
-                            }
-                        });
-                        if (longest.len > 10) columnMap.name_of_work = longest.key;
-                    }
-
-                    // Look for Links
-                    const linkKey = table === 'temp_tenders_global' ? 'globaldoclink' : 'gemdoclink';
-                    if (!columnMap[linkKey]) {
-                        const linkEntry = dataEntries.find(([k, v]) => String(v).includes('http'));
-                        if (linkEntry) columnMap[linkKey] = linkEntry[0];
-                    }
-                }
-            }
-
-            // Step 3: Absolute Fallback to Column Counts if mapping still weak
-            if (!columnMap.tender_id || Object.keys(columnMap).length < 3) {
-                console.log('⚠️ Smart Mapper weak. Using hardcoded templates based on column counts.');
-                const colCount = Object.keys(firstRow).length;
-
-                if (table === 'temp_tenders_global' || colCount === 16 || colCount === 17) {
-                    columnMap = {
-                        bidalert_user: '0', tender_id: '1', name_of_work: '2',
-                        tender_category: '3', tender_dept: '4', tender_qty: '5',
-                        tender_emd: '6', currency: '7', tender_ecv: '8',
-                        country: '9', city: '10', apply_mode: '11',
-                        source_site: '12', globaldoclink: '13', mfa: '14',
-                        closing_date: '15'
-                    };
-                } else if (colCount >= 15) { // Common Indian format
-                    columnMap = {
-                        bidalert_user: '0', tender_id: '1', name_of_work: '2',
-                        tender_category: '3', tender_dept: '4', tender_qty: '5',
-                        tender_emd: '6', emd_exemption: '7', tender_ecv: '8',
-                        state_name: '9', location: '10', apply_mode: '11',
-                        source_site: '12', gemdoclink: '13', doclinks: '14',
-                        closing_date: '15'
-                    };
-                } else {
-                    // Minimal fallback for unknown counts
-                    columnMap = { tender_id: '0', name_of_work: '1', tender_dept: '2', closing_date: '3' };
-                }
-            }
-
-            console.log('Final Column Map:', JSON.stringify(columnMap));
-            logMsg(`Mapping used: ${JSON.stringify(columnMap)}`);
-
-            const clean = (val) => val ? String(val).trim() : '';
-            const normalizeDate = (dateStr) => {
-                if (!dateStr || dateStr.trim() === '') return '2099-12-31 23:59:59';
-                dateStr = clean(dateStr).replace(/\s+/g, ' ');
-                const processedDateStr = dateStr.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
-                try {
-                    const d = new Date(processedDateStr);
-                    if (!isNaN(d.getTime())) {
-                        const pad = (n) => n.toString().padStart(2, '0');
-                        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-                    }
-                } catch (e) { }
-                let isoDate = dateStr;
-                if (dateStr.includes('-') || dateStr.includes('/')) {
-                    const separator = dateStr.includes('-') ? '-' : '/';
-                    const parts = dateStr.split(' ');
-                    const dateParts = parts[0].split(separator);
-                    if (dateParts[0]?.length === 2 && dateParts[2]?.length === 4) isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}${parts[1] ? ' ' + parts[1] : ''}`;
-                }
-                if (isoDate.length === 10) isoDate += ' 23:59:59';
-                return isoDate || '2099-12-31 23:59:59';
-            };
-
-            let successCount = 0;
-            let errorCount = 0;
-
-            for (const row of results) {
-                try {
-                    const getValue = (field) => {
-                        const key = columnMap[field];
-                        return key !== undefined ? clean(row[key]) || '' : '';
-                    };
-
-                    let tender_id = getValue('tender_id');
-                    if (!tender_id || tender_id === '0' || tender_id === 'tender_id') {
-                        // Skip empty or header-like rows if they slipped through
-                        continue;
-                    }
-
-                    const closing_date_val = normalizeDate(getValue('closing_date'));
-
-                    if (table === 'temp_tenders_global') {
-                        const globalData = {
-                            bidalert_user: getValue('bidalert_user'),
-                            tender_id: tender_id,
-                            name_of_work: getValue('name_of_work'),
-                            tender_category: getValue('tender_category'),
-                            tender_dept: getValue('tender_dept'),
-                            tender_qty: getValue('tender_qty'),
-                            tender_emd: getValue('tender_emd'),
-                            currency: getValue('currency'),
-                            tender_ecv: getValue('tender_ecv') || 0,
-                            country: getValue('country') || getValue('state_name') || 'International',
-                            city: getValue('city') || getValue('location'),
-                            apply_mode: getValue('apply_mode'),
-                            source_site: getValue('source_site'),
-                            globaldoclink: getValue('gemdoclink') || getValue('doclinks') || getValue('globaldoclink'),
-                            mfa: getValue('mfa'),
-                            closing_date: closing_date_val
-                        };
-
-                        await pool.query(
-                            `INSERT INTO temp_tenders_global 
-                            (bidalert_user, tender_id, name_of_work, tender_category, tender_dept, tender_qty, tender_emd, currency, tender_ecv, country, city, apply_mode, source_site, globaldoclink, mfa, closing_date)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ON DUPLICATE KEY UPDATE name_of_work=VALUES(name_of_work), tender_dept=VALUES(tender_dept), closing_date=VALUES(closing_date), tender_ecv=VALUES(tender_ecv), country=VALUES(country), globaldoclink=VALUES(globaldoclink)`,
-                            [
-                                globalData.bidalert_user, globalData.tender_id, globalData.name_of_work,
-                                globalData.tender_category, globalData.tender_dept, globalData.tender_qty,
-                                globalData.tender_emd, globalData.currency, globalData.tender_ecv,
-                                globalData.country, globalData.city, globalData.apply_mode,
-                                globalData.source_site, globalData.globaldoclink, globalData.mfa,
-                                globalData.closing_date
-                            ]
-                        );
-                    } else {
-                        const tenderData = {
-                            bidalert_user: getValue('bidalert_user'),
-                            tender_id: tender_id,
-                            name_of_work: getValue('name_of_work'),
-                            tender_category: getValue('tender_category'),
-                            tender_dept: getValue('tender_dept'),
-                            tender_qty: getValue('tender_qty'),
-                            tender_emd: getValue('tender_emd'),
-                            emd_exemption: getValue('emd_exemption'),
-                            tender_ecv: getValue('tender_ecv') || 0,
-                            state_name: getValue('state_name') || getValue('country') || '',
-                            location: getValue('location') || getValue('city') || '',
-                            apply_mode: getValue('apply_mode'),
-                            source_site: getValue('source_site'),
-                            gemdoclink: getValue('gemdoclink') || getValue('globaldoclink') || '',
-                            doclinks: getValue('doclinks') || '',
-                            closing_date: closing_date_val
-                        };
-
-                        const [insertRes] = await pool.query(
-                            `INSERT INTO ?? 
-                            (bidalert_user, tender_id, name_of_work, tender_category, tender_dept, tender_qty, tender_emd, emd_exemption, tender_ecv, state_name, location, apply_mode, source_site, gemdoclink, doclinks, closing_date)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ON DUPLICATE KEY UPDATE name_of_work=VALUES(name_of_work), tender_dept=VALUES(tender_dept), closing_date=VALUES(closing_date), tender_ecv=VALUES(tender_ecv), location=VALUES(location), state_name=VALUES(state_name)`,
-                            [
-                                table,
-                                tenderData.bidalert_user, tenderData.tender_id, tenderData.name_of_work,
-                                tenderData.tender_category, tenderData.tender_dept, tenderData.tender_qty,
-                                tenderData.tender_emd, tenderData.emd_exemption, tenderData.tender_ecv,
-                                tenderData.state_name, tenderData.location, tenderData.apply_mode,
-                                tenderData.source_site, tenderData.gemdoclink, tenderData.doclinks,
-                                tenderData.closing_date
-                            ]
-                        );
-
-                        // Auto-reformat ID for newly inserted manual/template tenders
-                        if (insertRes.insertId) {
-                            let sourceCode = table.includes('eprocurement') ? 'EP' : table.includes('gem') ? 'GEM' : table.includes('ireps') ? 'IR' : '';
-
-                            // Smart Override Source Code based on ID patterns
-                            if (tender_id.startsWith('GEM/')) sourceCode = 'GEM';
-                            else if (tender_id.includes('IREPS') || tender_id.includes('IR/')) sourceCode = 'IR';
-                            else if (tender_id.substring(0, 3).includes('/') && sourceCode === 'EP') sourceCode = 'EP'; // Generic slash usually EP
-
-                            if (sourceCode) {
-                                const year = new Date().getFullYear().toString().slice(-2);
-                                const serial = String(insertRes.insertId).padStart(3, '0');
-                                const formattedId = `BIDALERT-${sourceCode}-${year}-${serial}`;
-                                await pool.query(`UPDATE ?? SET tender_id = ? WHERE id = ?`, [table, formattedId, insertRes.insertId]);
-                            }
-                        }
-                    }
-                    successCount++;
-                } catch (err) {
-                    console.error('❌ Import error on row:', err.message);
-                    errorCount++;
-                }
-            }
-
-            try { fs.unlinkSync(req.file.path); } catch (e) { }
-
-            if (successCount > 0) {
-                try {
-                    const tableNameNice = table.replace('_tenders', '').replace('temp_tenders_', '').toUpperCase();
-                    let redirectLink = '/tenders';
-                    if (table === 'temp_tenders_global') {
-                        redirectLink = '/global-tenders';
-                    } else if (table === 'ireps_tenders') {
-                        redirectLink = '/tenders?portal=ireps';
-                    } else if (table === 'gem_tenders') {
-                        redirectLink = '/tenders?portal=gem';
-                    } else if (table === 'eprocurement_tenders') {
-                        redirectLink = '/tenders?portal=eprocurement';
-                    }
-
-                    await pool.query('INSERT INTO notifications (title, message, type, link, user_id) VALUES (?, ?, ?, ?, ?)',
-                        ['🆕 New Tenders Uploaded', `Admin has uploaded ${successCount} new tenders to ${tableNameNice}.`, 'alert', redirectLink, null]);
-                } catch (notifyErr) { }
-            }
-
-            if (!responseSent) {
-                responseSent = true;
-                res.json({
-                    success: true,
-                    message: `Imported ${successCount} rows successfully.${errorCount > 0 ? ` (${errorCount} rows failed)` : ''}`,
-                    stats: { success: successCount, errors: errorCount }
-                });
-            }
-        });
+    const { handleImport } = require('./import_handler');
+    handleImport(req, res, table);
 });
 
 // ==================== Q&A ENDPOINTS ====================

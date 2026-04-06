@@ -41,16 +41,16 @@ export default function TenderDetailsClient() {
     const idParts = params?.id;
     const id = Array.isArray(idParts) ? idParts.join('/') : idParts;
 
-    // Refresh user status periodically if not paid to "auto-unlock" after payment
+    // Refresh user status periodically to handle real-time subscription activation OR expiration
     useEffect(() => {
-        if (isAuthenticated && user?.subscription_status !== 'pro' && user?.role !== 'admin') {
+        if (isAuthenticated && user?.role !== 'admin') {
             const interval = setInterval(() => {
                 refreshUser();
-            }, 5000); // Check every 5 seconds
+            }, 8000); // Check every 8 seconds
 
             return () => clearInterval(interval);
         }
-    }, [isAuthenticated, user?.subscription_status, user?.role, refreshUser]);
+    }, [isAuthenticated, user?.role, refreshUser]);
 
     useEffect(() => {
         if (authLoading) return;
@@ -340,7 +340,12 @@ export default function TenderDetailsClient() {
                             </div>
                             <div className="flex items-center gap-1.5 sm:gap-2.5">
                                 <MapPin size={14} className="text-bid-green sm:w-[18px] sm:h-[18px]" />
-                                <span className="text-xs sm:text-sm font-medium">{safeTender.city}, {safeTender.state}</span>
+                                <span className="text-xs sm:text-sm font-medium">
+                                    {[safeTender.city, safeTender.state]
+                                        .map(loc => loc ? String(loc).trim() : '')
+                                        .filter(loc => loc !== '' && loc.toLowerCase() !== 'null' && loc.toLowerCase() !== 'undefined' && loc.toLowerCase() !== 'n/a')
+                                        .join(', ') || 'India'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -358,9 +363,6 @@ export default function TenderDetailsClient() {
                                 >
                                     <Download size={18} />
                                     Download All Tender Documents (Premium)
-                                </button>
-                                <button onClick={() => window.print()} className="p-4 bg-white border border-gray-200 rounded-2xl text-gray-400 hover:text-bid-dark hover:border-bid-dark transition-all">
-                                    <Printer size={20} />
                                 </button>
                             </div>
                         )}
@@ -457,7 +459,7 @@ export default function TenderDetailsClient() {
                                         </div>
                                         <div className="bg-[#F8FBFA] p-4 rounded-xl border border-emerald-50">
                                             <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Local Office</p>
-                                            <p className="text-sm font-bold text-bid-dark">✔ Service center required in {safeTender.state}</p>
+                                            <p className="text-sm font-bold text-bid-dark">✔ Service center required in {safeTender.state && String(safeTender.state).toLowerCase() !== 'null' ? safeTender.state : 'Local/Base Town'}</p>
                                         </div>
                                     </div>
                                 </div>

@@ -26,7 +26,6 @@ export default function Header() {
     const [unreadUserCount, setUnreadUserCount] = useState(0);
     const [logoClickCount, setLogoClickCount] = useState(0);
     const [showExpiryWarning, setShowExpiryWarning] = useState(false);
-    const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
     const [showAdminLoginTrigger, setShowAdminLoginTrigger] = useState(false);
     const clickResetTimerRef = useRef<NodeJS.Timeout | null>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -106,6 +105,8 @@ export default function Header() {
         }
     };
 
+    const [expiryText, setExpiryText] = useState('');
+
     useEffect(() => {
         setMounted(true);
         fetchArchiveYears();
@@ -136,11 +137,22 @@ export default function Header() {
                 const expiryDate = new Date(user.plan_expiry_date);
                 const now = new Date();
                 const diffTime = expiryDate.getTime() - now.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                setDaysRemaining(diffDays);
 
-                if (diffDays >= 0 && diffDays <= 3) {
-                    setShowExpiryWarning(true);
+                if (diffTime > 0) {
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+
+                    if (diffDays > 0) {
+                        setExpiryText(`${diffDays} ${diffDays === 1 ? 'day' : 'days'}`);
+                        setShowExpiryWarning(diffDays <= 3);
+                    } else if (diffHours > 0) {
+                        setExpiryText(`${diffHours}h ${diffMinutes}m`);
+                        setShowExpiryWarning(true);
+                    } else {
+                        setExpiryText(`${diffMinutes} minutes`);
+                        setShowExpiryWarning(true);
+                    }
                 } else {
                     setShowExpiryWarning(false);
                 }
@@ -365,7 +377,7 @@ export default function Header() {
             {showExpiryWarning && (
                 <div className="fixed top-0 left-0 right-0 z-[110] bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] sm:text-xs font-black py-2.5 px-4 text-center flex items-center justify-center gap-4 shadow-lg border-b border-white/10 uppercase tracking-widest">
                     <Sparkles size={14} className="animate-pulse shrink-0" />
-                    <span>Your plan expires in {daysRemaining === 0 ? 'few hours' : `${daysRemaining} days`}. Renew now for uninterrupted service!</span>
+                    <span>Your plan expires in {expiryText}. Renew now for uninterrupted service!</span>
                     <Link href="/plans" className="bg-white text-orange-600 px-4 py-1 rounded-full hover:bg-opacity-90 transition-all hover:scale-105 active:scale-95 shadow-sm">Renew Now</Link>
                 </div>
             )}

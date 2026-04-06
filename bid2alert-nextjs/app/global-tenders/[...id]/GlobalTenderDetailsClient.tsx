@@ -27,12 +27,23 @@ interface GlobalTender {
 export default function GlobalTenderDetailsClient() {
     const params = useParams();
     const router = useRouter();
-    const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+    const { isAuthenticated, user, isLoading: authLoading, refreshUser } = useAuth();
     const [tender, setTender] = useState<GlobalTender | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     const id = Array.isArray(params?.id) ? params.id.map(segment => decodeURIComponent(segment)).join('/') : params?.id ? decodeURIComponent(params.id) : null;
+
+    // Refresh user status periodically to handle real-time subscription activation OR expiration
+    useEffect(() => {
+        if (isAuthenticated && user?.role !== 'admin') {
+            const interval = setInterval(() => {
+                refreshUser();
+            }, 8000); // Check every 8 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [isAuthenticated, user?.role, refreshUser]);
 
     useEffect(() => {
         if (authLoading) return;
@@ -121,7 +132,6 @@ export default function GlobalTenderDetailsClient() {
                         Back to Global Tenders
                     </Link>
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <button className="p-2 text-gray-400 hover:text-bid-dark hover:bg-gray-50 rounded-full transition" title="Print"><Printer className="w-4 h-4 sm:w-5 sm:h-5" /></button>
                         <button className="p-2 text-gray-400 hover:text-bid-dark hover:bg-gray-50 rounded-full transition" title="Share"><Share2 className="w-4 h-4 sm:w-5 sm:h-5" /></button>
                     </div>
                 </div>
